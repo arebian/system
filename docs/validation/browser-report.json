@@ -1,0 +1,42 @@
+[
+  {
+    "class": "COMMANDER",
+    "workflow": "passed"
+  },
+  {
+    "class": "TANK",
+    "workflow": "passed"
+  },
+  {
+    "class": "ASSASSIN",
+    "workflow": "passed"
+  },
+  {
+    "class": "RANGER",
+    "workflow": "passed"
+  },
+  {
+    "class": "MAGE",
+    "workflow": "passed"
+  },
+  {
+    "class": "COMMANDER",
+    "mobileLight": "passed"
+  },
+  {
+    "class": "TANK",
+    "mobileLight": "passed"
+  },
+  {
+    "class": "ASSASSIN",
+    "mobileLight": "passed"
+  },
+  {
+    "class": "RANGER",
+    "mobileLight": "passed"
+  },
+  {
+    "class": "MAGE",
+    "mobileLight": "passed"
+  }
+]

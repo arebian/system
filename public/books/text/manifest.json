@@ -1,0 +1,316 @@
+{
+  "provider": "Project Gutenberg",
+  "licenseNotice": "Original edition text and Project Gutenberg license notices retained. Public-domain status is jurisdiction dependent; see each edition's source page.",
+  "editions": [
+    {
+      "key": "make-your-bed",
+      "title": "Self Help; with Illustrations of Conduct and Perseverance",
+      "author": "Samuel Smiles",
+      "id": "935",
+      "source": "https://www.gutenberg.org/cache/epub/935/pg935.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/935",
+      "bytes": 866279,
+      "sha256": "e7f4232f8880af072453521a95d72b3476d716e2485de08ab8e54c444f28802a"
+    },
+    {
+      "key": "the-alchemist",
+      "title": "How to Live on 24 Hours a Day",
+      "author": "Arnold Bennett",
+      "id": "2274",
+      "source": "https://www.gutenberg.org/cache/epub/2274/pg2274.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/2274",
+      "bytes": 92930,
+      "sha256": "9b82d3168c476d0b5238768555ebd50a3cc7bbf199927e6f065d35a650ebfa16"
+    },
+    {
+      "key": "the-art-of-war",
+      "title": "The Art of War",
+      "author": "Sun Tzu, translated by Lionel Giles",
+      "id": "132",
+      "source": "https://www.gutenberg.org/cache/epub/132/pg132.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/132",
+      "bytes": 342105,
+      "sha256": "c478f7e05a07bf190585fcea0bc4658ce22e47949ac18444eca53fb274878ffe"
+    },
+    {
+      "key": "richest-man-in-babylon",
+      "title": "The Power of Concentration",
+      "author": "William Walker Atkinson",
+      "id": "1570",
+      "source": "https://www.gutenberg.org/cache/epub/1570/pg1570.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1570",
+      "bytes": 248974,
+      "sha256": "86195822a917ab08c296de2c275585606b64cf2797e5f9124d8330c5ecfea3d7"
+    },
+    {
+      "key": "tuesdays-with-morrie",
+      "title": "Talks on Talking",
+      "author": "Grenville Kleiser",
+      "id": "17476",
+      "source": "https://www.gutenberg.org/cache/epub/17476/pg17476.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/17476",
+      "bytes": 184796,
+      "sha256": "43a3c6c8d53d39a353d4f9027e0d1674a7170be82e89affcf6dd13ceba646c02"
+    },
+    {
+      "key": "who-moved-my-cheese",
+      "title": "The Secret Garden",
+      "author": "Frances Hodgson Burnett",
+      "id": "17396",
+      "source": "https://www.gutenberg.org/cache/epub/17396/pg17396.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/17396",
+      "bytes": 462012,
+      "sha256": "438e61f5639bbe77d8730516944a312f4bb0704d59a36b6b8d57a7b66457bcae"
+    },
+    {
+      "key": "atomic-habits",
+      "title": "The Autobiography of Benjamin Franklin",
+      "author": "Benjamin Franklin",
+      "id": "148",
+      "source": "https://www.gutenberg.org/cache/epub/148/pg148.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/148",
+      "bytes": 404717,
+      "sha256": "32b5b6ba76ad51ec1f5630836a5da2f733e893d885772f846bd62f2111ec6eae"
+    },
+    {
+      "key": "ikigai",
+      "title": "The Aesop for Children",
+      "author": "Aesop, illustrated by Milo Winter",
+      "id": "19994",
+      "source": "https://www.gutenberg.org/cache/epub/19994/pg19994.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/19994",
+      "bytes": 172456,
+      "sha256": "1a98d0ccac59f1017763d25099ea57c330fc96caaa4c039915ae4e74ca3cee05"
+    },
+    {
+      "key": "compound-effect",
+      "title": "The Jungle Book",
+      "author": "Rudyard Kipling",
+      "id": "236",
+      "source": "https://www.gutenberg.org/cache/epub/236/pg236.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/236",
+      "bytes": 303640,
+      "sha256": "571353c4c69d127020fb16cd6a566f1d80101bc0fc3cf2b0c2ea5678bf4c769f"
+    },
+    {
+      "key": "psychology-of-money",
+      "title": "The Call of the Wild",
+      "author": "Jack London",
+      "id": "215",
+      "source": "https://www.gutenberg.org/cache/epub/215/pg215.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/215",
+      "bytes": 199757,
+      "sha256": "30f569c5671bba7bbc4a92ab6d8ee01a0d3be00f994819c77da62c28041eb8a2"
+    },
+    {
+      "key": "the-little-prince",
+      "title": "Walden, and On The Duty Of Civil Disobedience",
+      "author": "Henry David Thoreau",
+      "id": "205",
+      "source": "https://www.gutenberg.org/cache/epub/205/pg205.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/205",
+      "bytes": 667957,
+      "sha256": "2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9"
+    },
+    {
+      "key": "deep-work",
+      "title": "The Art of Logical Thinking; Or, The Laws of Reasoning",
+      "author": "William Walker Atkinson",
+      "id": "41838",
+      "source": "https://www.gutenberg.org/cache/epub/41838/pg41838.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/41838",
+      "bytes": 228846,
+      "sha256": "9297c109409e270382b0be9ccba7642b7af756686e18a0844908101184279620"
+    },
+    {
+      "key": "i-will-teach-you-to-be-rich",
+      "title": "How to Live: Rules for Healthful Living Based on Modern Science",
+      "author": "Irving Fisher and Eugene Lyman Fisk",
+      "id": "19598",
+      "source": "https://www.gutenberg.org/cache/epub/19598/pg19598.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/19598",
+      "bytes": 527839,
+      "sha256": "215f61d9dbaf62fe872d79942c4e3b6031891d440c46894742c791dcb21677e1"
+    },
+    {
+      "key": "mans-search-for-meaning",
+      "title": "Narrative of the Life of Frederick Douglass, an American Slave",
+      "author": "Frederick Douglass",
+      "id": "23",
+      "source": "https://www.gutenberg.org/cache/epub/23/pg23.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/23",
+      "bytes": 249061,
+      "sha256": "234c15348a66919bad1d534cdd48ee8ddf91f50115a706cbefaa8edd049672fd"
+    },
+    {
+      "key": "obstacle-is-the-way",
+      "title": "The Strange Case of Dr. Jekyll and Mr. Hyde",
+      "author": "Robert Louis Stevenson",
+      "id": "43",
+      "source": "https://www.gutenberg.org/cache/epub/43/pg43.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/43",
+      "bytes": 163495,
+      "sha256": "b43448a88391591f9cf82b25553df00faf47a2752a873185fcdd1156eebdb990"
+    },
+    {
+      "key": "why-we-sleep",
+      "title": "The Republic",
+      "author": "Plato, translated by Benjamin Jowett",
+      "id": "1497",
+      "source": "https://www.gutenberg.org/cache/epub/1497/pg1497.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1497",
+      "bytes": 1244165,
+      "sha256": "3d2e397122881d7737a48fb80e71cddf4c78cda54ceac7e0905fe945dfab48fd"
+    },
+    {
+      "key": "essentialism",
+      "title": "The Elements of Style",
+      "author": "William Strunk, Jr.",
+      "id": "37134",
+      "source": "https://www.gutenberg.org/cache/epub/37134/pg37134.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/37134",
+      "bytes": 108437,
+      "sha256": "bf5312eb0fa36837253ec84211cdab51deae01744e1de3ffef528aee43c27496"
+    },
+    {
+      "key": "grit",
+      "title": "White Fang",
+      "author": "Jack London",
+      "id": "910",
+      "source": "https://www.gutenberg.org/cache/epub/910/pg910.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/910",
+      "bytes": 428909,
+      "sha256": "3c7226d00fd9b169f0016635d0e461501620f343220ee18db7ca9f083f4ad3f4"
+    },
+    {
+      "key": "outlive",
+      "title": "On the Origin of Species",
+      "author": "Charles Darwin",
+      "id": "1228",
+      "source": "https://www.gutenberg.org/cache/epub/1228/pg1228.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1228",
+      "bytes": 970611,
+      "sha256": "362142cb7c6f90850477520cfe2a62fe423ae92ea8eb6d9cd8b30ddb39de60b9"
+    },
+    {
+      "key": "simple-path-to-wealth",
+      "title": "The Federalist Papers",
+      "author": "Alexander Hamilton, John Jay and James Madison",
+      "id": "1404",
+      "source": "https://www.gutenberg.org/cache/epub/1404/pg1404.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1404",
+      "bytes": 1186849,
+      "sha256": "0b92fadc9d7afd767eefd27805a20e44417ff26d1fb2f964229f39dcc7b2a65d"
+    },
+    {
+      "key": "thinking-in-bets",
+      "title": "The Hound of the Baskervilles",
+      "author": "Arthur Conan Doyle",
+      "id": "2852",
+      "source": "https://www.gutenberg.org/cache/epub/2852/pg2852.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/2852",
+      "bytes": 388046,
+      "sha256": "f7c8c68729d32a5f6a04a5a9ad73d184176e66a6c76b3992c41c1ab47b427d98"
+    },
+    {
+      "key": "intelligent-investor",
+      "title": "The Theory of the Leisure Class",
+      "author": "Thorstein Veblen",
+      "id": "833",
+      "source": "https://www.gutenberg.org/cache/epub/833/pg833.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/833",
+      "bytes": 672277,
+      "sha256": "84ee65366e377e9c087171c2286d28d74e6c860b83c01175ad5f863f09666bca"
+    },
+    {
+      "key": "laws-of-human-nature",
+      "title": "The Picture of Dorian Gray",
+      "author": "Oscar Wilde",
+      "id": "174",
+      "source": "https://www.gutenberg.org/cache/epub/174/pg174.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/174",
+      "bytes": 465814,
+      "sha256": "38f36b510417177aa87a6a24c968e3ec63a447b7df36a9c1a7c5a3f2d9e51547"
+    },
+    {
+      "key": "antifragile",
+      "title": "The Prince",
+      "author": "Niccol\u00f2 Machiavelli",
+      "id": "1232",
+      "source": "https://www.gutenberg.org/cache/epub/1232/pg1232.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1232",
+      "bytes": 308019,
+      "sha256": "33496a305f7a4b933784fb5aec95f920fbc3d4687794817e4cc444aa6578d2e4"
+    },
+    {
+      "key": "meditations",
+      "title": "Meditations",
+      "author": "Marcus Aurelius",
+      "id": "2680",
+      "source": "https://www.gutenberg.org/cache/epub/2680/pg2680.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/2680",
+      "bytes": 425304,
+      "sha256": "6977474f82a39dd88a4af31a59504821658174d33c177732c54357e4d680b96c"
+    },
+    {
+      "key": "thinking-fast-and-slow",
+      "title": "The Time Machine",
+      "author": "H. G. Wells",
+      "id": "35",
+      "source": "https://www.gutenberg.org/cache/epub/35/pg35.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/35",
+      "bytes": 204384,
+      "sha256": "2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc"
+    },
+    {
+      "key": "security-analysis",
+      "title": "An Inquiry into the Nature and Causes of the Wealth of Nations",
+      "author": "Adam Smith",
+      "id": "3300",
+      "source": "https://www.gutenberg.org/cache/epub/3300/pg3300.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/3300",
+      "bytes": 2468951,
+      "sha256": "e91d52dca43fd0fd69baf7776b00a5d8e74b69675b6b608ca8a0378aaf3ae58d"
+    },
+    {
+      "key": "behave",
+      "title": "Moby Dick; Or, The Whale",
+      "author": "Herman Melville",
+      "id": "2701",
+      "source": "https://www.gutenberg.org/cache/epub/2701/pg2701.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/2701",
+      "bytes": 1276267,
+      "sha256": "907420db6c4b68c70e2988cd2ad9c8cf79138667a01b63376d18dd17fef1a18b"
+    },
+    {
+      "key": "poor-charlies-almanack",
+      "title": "The Count of Monte Cristo",
+      "author": "Alexandre Dumas and Auguste Maquet",
+      "id": "1184",
+      "source": "https://www.gutenberg.org/cache/epub/1184/pg1184.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1184",
+      "bytes": 2787124,
+      "sha256": "64f8d5cfa51fcecb904abf7312d395d512a71817e7359b91288beb50517c3836"
+    },
+    {
+      "key": "beginning-of-infinity",
+      "title": "The Odyssey",
+      "author": "Homer, translated by Samuel Butler",
+      "id": "1727",
+      "source": "https://www.gutenberg.org/cache/epub/1727/pg1727.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/1727",
+      "bytes": 717784,
+      "sha256": "ffbdb29c3dda284b65c11243db1a98167826a70c81bca2ed4b6232f86c905fb9"
+    },
+    {
+      "key": "brothers-karamazov",
+      "title": "The Brothers Karamazov",
+      "author": "Fyodor Dostoyevsky, translated by Constance Garnett",
+      "id": "28054",
+      "source": "https://www.gutenberg.org/cache/epub/28054/pg28054.txt",
+      "sourcePage": "https://www.gutenberg.org/ebooks/28054",
+      "bytes": 2039141,
+      "sha256": "2e75c187cb750df3f7c910fa90970b264b9a4fee212be2a73c6bb507d9ad22fe"
+    }
+  ]
+}

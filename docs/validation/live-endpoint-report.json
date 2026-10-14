@@ -1,0 +1,37 @@
+{
+  "checked_at": "2026-10-13",
+  "checks": [
+    {
+      "check": "auth_settings",
+      "status": 200,
+      "google_enabled": true,
+      "email_enabled": true
+    },
+    {
+      "check": "google_start",
+      "status": 302,
+      "redirect_host": "accounts.google.com"
+    },
+    {
+      "check": "ai_rejects_signed_out",
+      "status": 401,
+      "error_code": null
+    },
+    {
+      "check": "content_rejects_signed_out",
+      "status": 401,
+      "error_code": null
+    },
+    {
+      "check": "quest_accept_rejects_anonymous",
+      "status": 401,
+      "error_code": "42501"
+    },
+    {
+      "check": "quest_complete_rejects_anonymous",
+      "status": 401,
+      "error_code": "42501"
+    }
+  ],
+  "real_account_oauth_and_paid_ai": "not_tested"
+}

@@ -1,0 +1,22 @@
+{
+  "version": "2.9.4",
+  "baseline": "2.9.3",
+  "built_at": "2026-09-25",
+  "release": "PLAYER FOUNDATION SCAN",
+  "backend_migrations": [
+    "20260925154139_player_foundation_scan_v2_9_4",
+    "20260925155346_player_foundation_scan_routine_preferences"
+  ],
+  "key_files": [
+    "src/App.jsx",
+    "src/systemFoundationScan.js",
+    "src/systemCloud.js",
+    "src/styles/system.css",
+    "supabase/migrations/20260925154139_player_foundation_scan_v2_9_4.sql",
+    "supabase/migrations/20260925155346_player_foundation_scan_routine_preferences.sql",
+    "tests/systemFoundationScan.test.mjs",
+    "tests/backend-foundation-scan.sql",
+    "tests/browser/foundation-workflow.cjs",
+    "install-update.sh"
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "width": 1440,
+    "allFiveArtworks": "passed",
+    "automaticRotation": "passed",
+    "controlsRemoved": "passed",
+    "reducedMotion": "passed",
+    "inputPreservation": "passed"
+  },
+  {
+    "width": 390,
+    "allFiveArtworks": "passed",
+    "automaticRotation": "passed",
+    "controlsRemoved": "passed",
+    "reducedMotion": "passed",
+    "inputPreservation": "passed"
+  },
+  {
+    "foundation": 1440,
+    "requiredWeight": "passed",
+    "multipleGoals": "passed",
+    "feetInches": "passed"
+  },
+  {
+    "foundation": 390,
+    "requiredWeight": "passed",
+    "multipleGoals": "passed",
+    "feetInches": "passed"
+  }
+]

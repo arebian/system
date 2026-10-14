@@ -1,0 +1,56 @@
+{
+  "version": "2.9.5",
+  "baseline": "2.9.4",
+  "built_at": "2026-10-09",
+  "release": "LAUNCH STABILITY",
+  "backend_migrations": [
+    "20261009130901_launch_stability_security_and_observability"
+  ],
+  "deployed_edge_functions": {
+    "system-content-api": 8,
+    "system-intelligence-responder": 8
+  },
+  "checks": {
+    "node_tests_passed": 74,
+    "transactional_database_checks_passed": 90,
+    "classes_checked": 5,
+    "native_reader_page_turns_checked": 30,
+    "complete_bundled_texts": 31,
+    "production_build": "passed",
+    "browser_auth_camera_gps": "simulated"
+  },
+  "remaining_launch_checks": [
+    "Enable leaked-password protection in Supabase Auth settings",
+    "Verify Google sign-in with a real account",
+    "Verify paid AI replies with the configured Edge Function secret",
+    "Verify physical camera upload, discard and delete",
+    "Verify real GPS route and permission recovery",
+    "Verify a full real-account training countdown and reading session"
+  ],
+  "key_files": [
+    "START_HERE_2_9_5.md",
+    "src/App.jsx",
+    "src/SystemGame.jsx",
+    "src/AuthScreen.jsx",
+    "src/LoginScreen.jsx",
+    "src/AccessShell.jsx",
+    "src/SectionBoundary.jsx",
+    "src/MageArchive.jsx",
+    "src/SystemIntelligenceFloat.jsx",
+    "src/systemProfileCore.js",
+    "src/systemProfileApi.js",
+    "src/systemArchiveText.js",
+    "src/systemErrors.js",
+    "src/systemErrorReporter.js",
+    "src/styles/access.css",
+    "src/styles/stability.css",
+    "public/books/text/manifest.json",
+    "supabase/migrations/20261009130901_launch_stability_security_and_observability.sql",
+    "supabase/functions/system-content-api/index.ts",
+    "supabase/functions/system-intelligence-responder/index.ts",
+    "tests/launchRecovery.test.mjs",
+    "tests/backend-launch-security.sql",
+    "tests/browser/launch-workflow.cjs",
+    "install-update.sh"
+  ]
+}

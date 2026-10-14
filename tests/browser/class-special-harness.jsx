@@ -1,0 +1,11 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import ClassSpecial from '../../src/ClassSpecial.jsx';
+import '../../src/styles/system.css';
+const query=new URLSearchParams(location.search);
+const path=query.get('class')||'COMMANDER';
+const theme=query.get('theme')||'dark';
+const colors={COMMANDER:'#f0a020',MAGE:'#a66af0',TANK:'#b97b38',ASSASSIN:'#d84552',RANGER:'#48c494'};
+const PageHero=({eyebrow,title,text})=><header className="page-hero"><small>{eyebrow}</small><h1>{title}</h1><p>{text}</p></header>;
+const SectionLabel=({number,title})=><h2 className="section-label">{number} {title}</h2>;
+createRoot(document.getElementById('root')).render(<React.StrictMode><div className={`app ${theme} ${path.toLowerCase()}`} style={{padding:'24px',background:theme==='light'?'#fffaf3':'#090a10','--accent':colors[path], '--app-bg':theme==='light'?'#fffaf3':'#090a10'}}><main className="main-content"><ClassSpecial profile={{path,classTrainingLog:[]}} saveProfile={(p)=>{window.savedProfile=p;}} refreshProfile={async()=>{window.profileRefreshes=(window.profileRefreshes||0)+1;}} setTab={(tab)=>{window.selectedTab=tab;}} PageHero={PageHero} SectionLabel={SectionLabel}/></main></div></React.StrictMode>);

@@ -1,0 +1,80 @@
+THE SYSTEM 2.5 — API CORE
+==========================
+
+SOURCE BASE
+-----------
+Built directly from THE SYSTEM 2.4 — SYSTEM AWARENESS.
+
+2.4 App.jsx SHA256:
+faee54a08437e9b147892066243d747c8ad44ab16aaaee5a6bf0ab0dc45a0bfe
+
+2.5 App.jsx SHA256:
+0da32905e78637f4320c496b5253740cb7037eeb704b5fc3718e252d239e1e76
+
+PRESERVED UNCHANGED FROM 2.4
+----------------------------
+systemAI.js: 5035012f94fbc6e0786f937ea8c2baf3291d063452b546eb57a4afa323abb19d
+systemAwareness.js: aeeb149ca80872d587d0d4f8aacbb9a56e4125aea1ce94adb998b52494c80632
+systemCloud.js: e9dd87a45b3ef58d15b7632621e1444e9135c8f586fd9f66acfc77e2dc6e980b
+
+Hash equality checks:
+- systemAI.js unchanged: YES
+- systemAwareness.js unchanged: YES
+- systemCloud.js unchanged: YES
+
+NEW FRONTEND FILE
+-----------------
+systemExternal.js
+SHA256: 970d345bfe6b3b59e6d27dc6ee0e553151788f66ea912aed84819e4e3622e810
+
+DEPLOYED BACKEND
+----------------
+system-intelligence-responder: ACTIVE version 3, verify_jwt=true
+system-content-api: ACTIVE version 2, verify_jwt=true
+system-api: preserved ACTIVE version 8
+
+2.5 FEATURES
+------------
+1. Cloud System Intelligence via OpenAI Responses API.
+2. Server-side provider keys only; no secret keys in React.
+3. Function tools for tutorial search and book search.
+4. Inline YouTube tutorial playback in System Intelligence.
+5. Direct tutorial fallback search for known exercise names.
+6. Google Books online discovery for the active Grand Archive book.
+7. Automatic Google Books Embedded Viewer when legally embeddable.
+8. Owned PDF fallback preserved when no online preview is available.
+9. System Intelligence chat history now links local conversation history to its cloud thread ID.
+10. Existing on-device/local guidance remains a fallback if cloud AI is unavailable.
+
+AUTHORITATIVE PROGRESSION
+-------------------------
+UNCHANGED.
+AI/content APIs cannot award XP, complete quests, apply penalties, grant Boss damage, or bypass proof.
+
+PRESERVATION CHECKS
+-------------------
+- 2.3.1 XP visibility fix: PASS
+- 2.3.2 Intelligence X hotfix: PASS
+- 2.4 System Awareness: PASS
+- 2.5 version label: PASS
+- OpenAI API adapter: PASS
+- In-app tutorial renderer: PASS
+- Archive online reader: PASS
+- Owned PDF fallback preserved: PASS
+- Cloud AI mode: PASS
+
+VALIDATION
+----------
+App.jsx syntax parse: PASS
+systemExternal.js syntax parse: PASS
+system-content-api TypeScript syntax parse: PASS
+system-intelligence-responder TypeScript syntax parse: PASS
+
+INSTALL
+-------
+Replace src/App.jsx.
+Add src/systemExternal.js.
+Optionally replace root AGENTS.md with the included 2.5 version.
+Keep systemAI.js, systemAwareness.js, and systemCloud.js as-is if your local 2.4 files match the current build.
+
+Then configure provider secrets per API_SETUP.md.

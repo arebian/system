@@ -1,0 +1,34 @@
+[
+  {
+    "login": 1440,
+    "errorRecovery": "passed"
+  },
+  {
+    "login": 390,
+    "errorRecovery": "passed"
+  },
+  {
+    "class": "COMMANDER",
+    "navigation": "passed"
+  },
+  {
+    "class": "TANK",
+    "navigation": "passed"
+  },
+  {
+    "class": "ASSASSIN",
+    "navigation": "passed"
+  },
+  {
+    "class": "RANGER",
+    "navigation": "passed"
+  },
+  {
+    "class": "MAGE",
+    "navigation": "passed"
+  },
+  {
+    "nativeReaders": 30,
+    "pageTurns": "passed"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "version": "2.9.6",
+  "baseline": "2.9.5",
+  "built_at": "2026-10-13",
+  "release": "CLASS ATMOSPHERE & FOUNDATION GOALS",
+  "backend_migrations": ["20261013124955_foundation_multiple_goals"],
+  "checks": {
+    "node_tests_passed": 77,
+    "transactional_database_checks_passed_this_patch": 41,
+    "artwork_classes_checked": 5,
+    "screen_widths_checked": [1440, 390],
+    "browser_auth_camera_gps": "simulated; real-account/device launch checks remain"
+  },
+  "key_files": [
+    "START_HERE_2_9_6.md",
+    "src/AccessClassScene.jsx",
+    "src/AccessShell.jsx",
+    "src/LoginScreen.jsx",
+    "src/systemFoundationScan.js",
+    "src/styles/access.css",
+    "supabase/migrations/20261013124955_foundation_multiple_goals.sql",
+    "tests/systemFoundationScan.test.mjs",
+    "tests/backend-foundation-goals.sql",
+    "tests/browser/access-workflow.cjs",
+    "install-update.sh"
+  ]
+}

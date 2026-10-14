@@ -1,0 +1,15 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import App from '../../src/App.jsx';
+import SystemGame from '../../src/SystemGame.jsx';
+import {normalizeProfile, todayKey} from '../../src/systemProfileCore.js';
+const query=new URLSearchParams(location.search);
+const path=query.get('class')||'MAGE';
+window.qaProfile=normalizeProfile({name:'QA PLAYER',gender:'MALE',age:25,path,level:1,xp:0,streak:0,fingerprint:'QA-'+path,fuel:{goal:'MAINTAIN',calorieTarget:2200,proteinTarget:100,logs:{}}});
+if(query.has('auth')) localStorage.removeItem('systemProfile');
+else localStorage.setItem('systemProfile',JSON.stringify(window.qaProfile));
+localStorage.setItem('systemTheme',query.get('theme')||'dark');
+localStorage.setItem('systemMusic','off');
+localStorage.setItem('systemSfx','off');
+localStorage.setItem('systemEvent-'+todayKey(),'shown');
+createRoot(document.getElementById('root')).render(<React.StrictMode>{query.has('auth') ? <App/> : <SystemGame/>}</React.StrictMode>);

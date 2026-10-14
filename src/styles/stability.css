@@ -1,0 +1,15 @@
+/* Settle the palette immediately; large scroll surfaces do not need a blur
+   or a permanent 3D compositor layer. Modal surfaces keep their own rules. */
+.app .card3d{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;transform:none;transition:border-color .18s ease,box-shadow .18s ease!important}
+@media(hover:none),(max-width:700px){
+  .app .card3d{box-shadow:0 7px 20px #0002,inset 0 1px 0 #fff1!important}
+  .app.dark .card3d{background:var(--panel-bg)!important}
+  .app.light .card3d{background:var(--panel-bg)!important}
+  .app .card3d::before,.app .card3d::after{animation:none!important}
+}
+.app .content{overflow-anchor:none}
+.app .system-section-recovery{background:var(--panel-bg);color:inherit}
+.app .system-loading{color:inherit}
+.app .system-intelligence-launcher{animation:none!important;transform:none!important}
+.app .system-intelligence-launcher::before,.app .system-intelligence-launcher::after{animation:none!important}
+@media(prefers-reduced-motion:reduce){.app .page,.app .mage-reader-page-surface{animation:none!important}}

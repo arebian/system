@@ -1,0 +1,8 @@
+{
+  "version": "2.9.7",
+  "baseline": "2.9.6",
+  "built_at": "2026-10-13",
+  "release": "AUTOMATIC LOGIN MOTION",
+  "backend_changes": false,
+  "key_files": ["src/AccessShell.jsx", "src/AccessClassScene.jsx", "src/styles/access.css", "tests/browser/access-workflow.cjs", "START_HERE_2_9_7.md", "install-update.sh"]
+}
