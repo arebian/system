@@ -10,7 +10,7 @@ Built from the complete 2.9.6 update.
 - Background tint and class captions change smoothly too.
 - Reduced motion and hidden-tab handling remain automatic system preferences.
 
-This is a frontend patch. The deployed 2.9.6 Foundation backend, required weight, feet/inches height and multiple goals remain included. The real-account/device launch checklist remains in START_HERE_2_9_6.md.
+This is a frontend patch. The deployed 2.9.6 Foundation backend, required weight, feet/inches height and multiple goals remain included. The real-account/device launch checklist remains in [START_HERE_2_9_6.md](docs/history/START_HERE_2_9_6.md).
 
 ## Install
 
