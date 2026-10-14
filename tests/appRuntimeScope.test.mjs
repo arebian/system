@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import {
   MAGE_ARCHIVE_CURATED_FALLBACK_BOOKS,
   SYSTEM_ARCHIVE_CURATED_BOOKS,
@@ -19,29 +19,13 @@ const cloudSource = await readFile(
   "utf8",
 );
 
-const rotationMigration = await readFile(
-  new URL(
-    "../supabase/migrations/20260916161438_daily_command_brief_and_rotations.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
-
-const archiveCuratedMigration = await readFile(
-  new URL(
-    "../supabase/migrations/20260921163847_archive_curated_in_app_editions.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
-
-const archiveReaderGuardMigration = await readFile(
-  new URL(
-    "../supabase/migrations/20260921164151_archive_curated_reader_key_guard.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
+// Inspect active migrations so a recovered baseline keeps these guards.
+const migrationDir = new URL('../supabase/migrations/', import.meta.url);
+const migrationFiles = (await readdir(migrationDir)).filter(name => name.endsWith('.sql')).sort();
+const migrationSource = (await Promise.all(migrationFiles.map(name => readFile(new URL(name, migrationDir), 'utf8')))).join('\n');
+const rotationMigration = migrationSource;
+const archiveCuratedMigration = migrationSource;
+const archiveReaderGuardMigration = migrationSource;
 
 function componentBlock(startMarker, endMarker) {
   const moduleSource = startMarker.includes("MageArchive") ? archiveSource : source;

@@ -1,13 +1,13 @@
-# THE SYSTEM 2.9.2 — NATIVE IN-APP GRAND ARCHIVE READER SETUP
+# THE SYSTEM — API SETUP
 
 ## What is already done
 
 The Supabase backend functions have already been deployed to the production project:
 
 - `system-intelligence-responder` — ACTIVE
-- `system-content-api` — ACTIVE (version 7, current reader/Open Library resolver and protected native Archive text route)
-- `system-api` — ACTIVE
-- JWT verification remains enabled on both functions
+- `system-content-api` — ACTIVE (version 8, current reader/Open Library resolver and protected native Archive text route)
+- `system-api` — ACTIVE (version 9; source included in this repository)
+- JWT verification remains enabled on all three functions
 - the 2.8.4 Adaptive directive repair is live
 - the 2.8.5 class-attribute, credit-ledger, and allocation hardening migrations are live
 - the 2.8.6 timer-verification backend is live
@@ -261,24 +261,9 @@ Console**. The allocation is written atomically with an audit event.
 Class alignment is guidance, not a cap: a Mage can build Strength, but fresh Mage
 profiles start knowledge-first rather than with the old flat all-10 values.
 
-## Frontend installation
+## Frontend development setup
 
-From this package:
-
-Copy the complete package over `/Users/bwoy/the-system` while preserving `.env`,
-`.env.local`, `node_modules`, and `dist`. The included install note provides one
-safe command that does exactly that.
-
-The patch updates `App.jsx`, `systemCloud.js`, `systemAttributesCore.js`, styles,
-tests, the current Edge Function, and the Supabase migrations. It preserves all
-existing local player data.
-
-Then run:
-
-```bash
-cd /Users/bwoy/the-system
-npm run dev -- --port 5174
-```
+Follow [the Git workflow](docs/COLLABORATING.md). From your checkout root, run `npm ci`, configure `.env.local` for your development backend, then `npm run dev -- --port 5174`. Use branches and pull requests instead of copying ZIP packages into the project. See [backend recovery](docs/BACKEND_RECOVERY.md) before creating or linking a database.
 
 ## Quick test checklist
 

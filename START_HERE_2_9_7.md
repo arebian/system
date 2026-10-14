@@ -12,17 +12,11 @@ Built from the complete 2.9.6 update.
 
 This is a frontend patch. The deployed 2.9.6 Foundation backend, required weight, feet/inches height and multiple goals remain included. The real-account/device launch checklist remains in [START_HERE_2_9_6.md](docs/history/START_HERE_2_9_6.md).
 
-## Install
+## Development setup
 
-Download `THE_SYSTEM_2_9_7_LOGIN_MOTION.zip` into Downloads, stop your running server with Control+C, then paste:
+Use the [Git collaboration workflow](docs/COLLABORATING.md). Clone into a folder of your choice, configure `.env.local` for your development backend, and install locked dependencies with `npm ci`. Use `git pull --ff-only` for a clean main checkout and feature branches for changes. ZIP installation is retired; `install-update.sh` stops without modifying files.
 
-```bash
-cd "$HOME/Downloads" &&
-unzip -q -o THE_SYSTEM_2_9_7_LOGIN_MOTION.zip -d THE_SYSTEM_2_9_7_UPDATE &&
-bash THE_SYSTEM_2_9_7_UPDATE/the-system-2.9.7/install-update.sh /Users/bwoy/the-system
-```
-
-The installer backs up your current app, preserves environment configuration and Git history, runs tests/build, then starts http://localhost:5174.
+Read [Backend recovery](docs/BACKEND_RECOVERY.md) before rebuilding or linking a Supabase database.
 
 ## Checks
 

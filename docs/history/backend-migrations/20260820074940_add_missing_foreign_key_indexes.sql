@@ -1,0 +1,11 @@
+create index if not exists boss_quest_objectives_boss_idx on public.boss_quest_objectives(boss_quest_id);
+create index if not exists boss_quest_objectives_user_idx on public.boss_quest_objectives(user_id);
+create index if not exists boss_quests_user_idx on public.boss_quests(user_id);
+create index if not exists goals_user_idx on public.goals(user_id);
+create index if not exists proof_records_user_idx on public.proof_records(user_id);
+create index if not exists skill_prerequisites_prereq_idx on public.skill_prerequisites(prerequisite_skill_id);
+create index if not exists user_achievements_achievement_idx on public.user_achievements(achievement_id);
+create index if not exists user_inventory_catalog_idx on public.user_inventory(catalog_item_id);
+create index if not exists user_quests_quest_idx on public.user_quests(quest_id);
+create index if not exists user_skills_skill_idx on public.user_skills(skill_id);
+create index if not exists user_titles_title_idx on public.user_titles(title_id);

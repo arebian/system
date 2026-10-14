@@ -1,6 +1,8 @@
-# Edge Function Contracts — THE SYSTEM 2.8.3
+# Edge Function Contracts — THE SYSTEM
 
-## system-api v8
+## system-api v9
+
+Source: `supabase/functions/system-api/index.ts`, recovered from deployed version 9 on 2026-10-14.
 
 Purpose: authoritative game/progression mutations.
 

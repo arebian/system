@@ -8,7 +8,7 @@
 **Emergency fallback baseline:** 2.1.1  
 **Frontend:** React + Vite + JSX  
 **Backend:** Supabase + PostgreSQL + RPC functions + Edge Functions  
-**Primary project folder on the user's Mac:** `/Users/bwoy/the-system`
+**Project folder:** any local Git checkout; run commands from the repository root.
 
 THE SYSTEM is a real-life RPG application.
 
@@ -1534,7 +1534,7 @@ After editing:
 Typical project commands:
 
 ```bash
-cd /Users/bwoy/the-system
+cd /path/to/your/system-checkout
 npm run dev -- --port 5174
 ```
 
@@ -1770,3 +1770,8 @@ inspect the current code first.
 The current repository is the truth.
 
 SYSTEM ONLINE.
+
+
+# 51. SHARED GIT WORKFLOW
+
+Read `docs/COLLABORATING.md` and `docs/BACKEND_RECOVERY.md`. Use feature branches and reviewed PRs. Never copy ZIP patches over a checkout, force-push main, or edit shared game/style files simultaneously without an agreed owner. Preserve .env.local locally. Historical install notes are records, not current instructions.
