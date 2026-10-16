@@ -1,4 +1,4 @@
-import { normalizeReviewProof, REVIEW_INSTRUCTIONS, REVIEW_SCHEMA, guardReviewDecision, responseText, selfReportedQuestDecision } from "./questReviewCore.js";
+import { normalizeReviewProof, REVIEW_INSTRUCTIONS, REVIEW_SCHEMA, guardReviewDecision, responseText, standardQuestDecision } from "./questReviewCore.js";
 import { buildWeeklyPlan } from "./weeklyBossCore.js";
 
 export const LIVING_ACTIONS = new Set(["review_quest", "weekly_boss_status", "prepare_weekly_boss", "accept_weekly_boss", "review_weekly_boss", "complete_weekly_boss", "weekly_boss_checkpoint", "retire_weekly_boss"]);
@@ -69,15 +69,12 @@ export async function handleLivingSystemAction({ action, payload, userId, client
   try {
     if (!userId) throw new PublicFailure("AUTH_REQUIRED", 401);
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new PublicFailure("INVALID_PAYLOAD");
-    const mode = String(payload.verification_mode || "AI").toUpperCase();
-    if (!["AI", "SELF_REPORTED"].includes(mode)) throw new PublicFailure("INVALID_VERIFICATION_MODE");
-    if (mode === "SELF_REPORTED" && action !== "review_quest") throw new PublicFailure("SELF_REPORT_NOT_AVAILABLE");
     if (action === "weekly_boss_status") return { status: 200, body: { data: await rpc(client, "system_weekly_boss_status_v1") } };
     if (action === "accept_weekly_boss") return { status: 200, body: { data: await rpc(client, "system_accept_weekly_boss_v1", { p_plan_id: payload.plan_id }) } };
     if (action === "complete_weekly_boss") return { status: 200, body: { data: await rpc(client, "system_complete_weekly_boss_v1", { p_boss_id: payload.boss_id, p_review_id: payload.review_id }) } };
     if (action === "retire_weekly_boss") return { status: 200, body: { data: await rpc(client, "system_retire_weekly_boss_v1", { p_boss_id: payload.boss_id }) } };
     if (action === "weekly_boss_checkpoint") return { status: 200, body: { data: await rpc(client, "system_set_boss_objective", { p_objective_id: payload.objective_id, p_complete: payload.complete === true }) } };
-    if (!await rpc(client, "system_begin_proof_review_v1")) throw new PublicFailure("REVIEW_RATE_LIMITED", 429);
+    if (action !== "review_quest" && !await rpc(client, "system_begin_proof_review_v1")) throw new PublicFailure("REVIEW_RATE_LIMITED", 429);
     if (action === "prepare_weekly_boss") {
       const status = await rpc(client, "system_weekly_boss_status_v1");
       if (!status.has_key) throw new PublicFailure("RAID_KEY_REQUIRED", 403);
@@ -121,15 +118,15 @@ export async function handleLivingSystemAction({ action, payload, userId, client
     }
     if (snapshot.proof_policy === "PHOTO" && !imageUrl) throw new PublicFailure("REVIEW_IMAGE_FORMAT_UNSUPPORTED");
     let review;
-    if (mode === "SELF_REPORTED") {
-      try { review = selfReportedQuestDecision(snapshot, proof); }
+    if (action === "review_quest") {
+      try { review = standardQuestDecision(snapshot, proof); }
       catch (error) { throw new PublicFailure(error instanceof Error ? error.message : "SELF_REPORT_NOT_AVAILABLE"); }
       if (review.decision !== "APPROVE") return { status: 200, body: { data: review } };
-      snapshot = { ...snapshot, verification_mode: "SELF_REPORTED" };
+      snapshot = { ...snapshot, verification_mode: "STANDARD_PROOF" };
     } else review = await reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher });
     const { data, error } = await admin.from("system_quest_reviews").insert({
       user_id: userId, target_type: action === "review_quest" ? "QUEST" : "BOSS", target_id: snapshot.target_id,
-      assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model: mode === "SELF_REPORTED" ? "SELF_REPORTED" : model,
+      assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model: action === "review_quest" ? "STANDARD_PROOF" : model,
     }).select("id,decision,reason,question,missing,expires_at").single();
     if (error) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
     return { status: 200, body: { data } };

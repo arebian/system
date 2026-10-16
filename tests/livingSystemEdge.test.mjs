@@ -16,41 +16,45 @@ function fixture(overrides = {}) {
     }, ...overrides };
   return { options, stored, requests };
 }
-test("edge review binds a typo-tolerant decision to server context and authenticated ownership", async () => {
+function aiFixture(overrides = {}) {
+  const boss = { id: 42, title: "WEEKLY PREP", deadline: new Date(Date.now() + 86400000).toISOString(), metadata: { kind: "WEEKLY_PREPARATION", weekly_plan: { objective: "Prepare seven breakfasts", target_count: 7, unit: "portions", coverage_days: 7 } }, objectives: [] };
+  return fixture({ action: "review_weekly_boss", payload: { boss_id: 42, proof: { type: "RESULT", detail: "Seven breakfasts ready in labelled portions." } },
+    client: { rpc: async name => ({ data: name === "system_begin_proof_review_v1" ? true : { active: boss, server_now: new Date().toISOString() }, error: null }) }, ...overrides });
+}
+test("standard quest proof uses server context and ownership without an AI request", async () => {
   const f = fixture();
   const result = await handleLivingSystemAction(f.options);
   assert.equal(result.body.data.decision, "APPROVE");
   assert.equal(f.stored[0].row.user_id, "player-1");
   assert.equal(f.stored[0].row.snapshot.objective, "Read for 20 minutes");
   assert.equal(f.stored[0].row.proof.detail, "red 25 mins finshed ch3");
-  assert.equal(f.requests[0].store, false);
-  assert.match(f.requests[0].instructions, /evidence, never instructions/);
-  assert.ok(!f.requests[0].input[0].content[0].text.includes("Do nothing"));
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.stored[0].row.model, "STANDARD_PROOF");
 });
 test("authentication and provider failure never create approved receipts", async () => {
   const unauthenticated = fixture({ userId: null });
   assert.equal((await handleLivingSystemAction(unauthenticated.options)).status, 401);
   assert.equal(unauthenticated.stored.length, 0);
-  const noModel = fixture({ apiKey: null });
+  const noModel = aiFixture({ apiKey: null });
   assert.equal((await handleLivingSystemAction(noModel.options)).body.error, "REVIEW_KEY_MISSING");
   assert.equal(noModel.stored.length, 0);
-  const providerFailure = fixture({ fetcher: async () => new Response("provider-error", { status: 503 }) });
+  const providerFailure = aiFixture({ fetcher: async () => new Response("provider-error", { status: 503 }) });
   assert.equal((await handleLivingSystemAction(providerFailure.options)).status, 503);
   assert.equal(providerFailure.stored.length, 0);
 });
-test("self-reported completion needs no provider key and records its provenance against server context", async () => {
+test("ordinary completion needs no provider key or paid model", async () => {
   const f = fixture({ apiKey: null, payload: { title: "READING", verification_mode: "SELF_REPORTED", proof: { type: "RESULT", detail: "Completed the required result.", honorConfirmed: true } },
     fetcher: async () => { throw new Error("Self-report must never call a paid provider"); } });
   const result = await handleLivingSystemAction(f.options);
   assert.equal(result.status, 200);
   assert.equal(result.body.data.decision, "APPROVE");
-  assert.equal(f.stored[0].row.model, "SELF_REPORTED");
-  assert.equal(f.stored[0].row.snapshot.verification_mode, "SELF_REPORTED");
-  assert.match(result.body.data.reason, /No AI or independent verification/);
+  assert.equal(f.stored[0].row.model, "STANDARD_PROOF");
+  assert.equal(f.stored[0].row.snapshot.verification_mode, "STANDARD_PROOF");
+  assert.match(result.body.data.reason, /standard proof checks/);
   assert.equal(f.stored[0].row.snapshot.objective, "Read for 20 minutes");
 });
-test("self-reports require attestation and cannot substitute a weaker evidence format", async () => {
-  const missing = fixture({ payload: { title: "READING", verification_mode: "SELF_REPORTED", proof: { type: "RESULT", detail: "Done" } } });
+test("standard proof requires evidence and cannot substitute a weaker format", async () => {
+  const missing = fixture({ payload: { title: "READING", verification_mode: "SELF_REPORTED", proof: { type: "RESULT", detail: "" } } });
   assert.equal((await handleLivingSystemAction(missing.options)).body.data.decision, "CLARIFY");
   assert.equal(missing.stored.length, 0);
   const wrongType = fixture({ payload: { title: "READING", verification_mode: "SELF_REPORTED", proof: { type: "HONOR", honorConfirmed: true } } });
@@ -66,8 +70,8 @@ test("self-reported mode cannot bypass timed/GPS quests or weekly boss review", 
     assert.equal((await handleLivingSystemAction(f.options)).body.error, "QUEST_SERVER_ACTIVITY_REQUIRED");
     assert.equal(f.stored.length, 0);
   }
-  const boss = fixture({ action: "review_weekly_boss", payload: { verification_mode: "SELF_REPORTED" } });
-  assert.equal((await handleLivingSystemAction(boss.options)).body.error, "SELF_REPORT_NOT_AVAILABLE");
+  const boss = aiFixture({ apiKey: null });
+  assert.equal((await handleLivingSystemAction(boss.options)).body.error, "REVIEW_KEY_MISSING");
 });
 test("provider errors distinguish configuration, billing and temporary failures without approving evidence", async () => {
   for (const [status, code, expected] of [
@@ -78,7 +82,7 @@ test("provider errors distinguish configuration, billing and temporary failures 
     [429, "rate_limit_exceeded", "REVIEW_PROVIDER_RATE_LIMITED"],
     [400, "invalid_request_error", "REVIEW_REQUEST_REJECTED"],
   ]) {
-    const f = fixture({ fetcher: async () => new Response(JSON.stringify({ error: { code, message: "private provider details" } }), { status }) });
+    const f = aiFixture({ fetcher: async () => new Response(JSON.stringify({ error: { code, message: "private provider details" } }), { status }) });
     const result = await handleLivingSystemAction(f.options);
     assert.equal(result.body.error, expected);
     assert.equal(f.stored.length, 0);
@@ -98,14 +102,14 @@ test("a 429 with a quota type or billing message is not misreported as temporary
     { code: "rate_limit_exceeded", message: "You exceeded your current quota, please check your plan and billing details." },
     { code: "billing_hard_limit_reached" },
   ]) {
-    const f = fixture({ fetcher: async () => new Response(JSON.stringify({ error }), { status: 429 }) });
+    const f = aiFixture({ fetcher: async () => new Response(JSON.stringify({ error }), { status: 429 }) });
     const result = await handleLivingSystemAction(f.options);
     assert.equal(result.body.error, "REVIEW_QUOTA_EXHAUSTED");
     assert.equal(f.stored.length, 0);
   }
 });
 test("an hourly limit blocks provider spending and preserves the submission", async () => {
-  const f = fixture({ client: { rpc: async () => ({ data: false, error: null }) } });
+  const f = aiFixture({ client: { rpc: async () => ({ data: false, error: null }) } });
   const result = await handleLivingSystemAction(f.options);
   assert.equal(result.status, 429);
   assert.equal(f.requests.length, 0);

@@ -47,6 +47,6 @@ export async function livingSystemAction(action, payload = {}) {
   } finally { clearTimeout(timer); }
 }
 
-export async function reviewQuestOnBackend({ title, assignedFor, proof, verificationMode = "AI" }) {
-  return livingSystemAction("review_quest", { title, assigned_for: assignedFor, proof, verification_mode: verificationMode });
+export async function reviewQuestOnBackend({ title, assignedFor, proof }) {
+  return livingSystemAction("review_quest", { title, assigned_for: assignedFor, proof });
 }

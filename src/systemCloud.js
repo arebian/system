@@ -646,7 +646,7 @@ export async function completeQuestByTitleOnBackend({
     async () => {
       if (proof?.type !== "TIME") proof = { ...proof, ...normalizeReviewProof(proof || {}) };
       if (proof?.type !== "TIME" && !proof?.reviewId) {
-        const assessment = await reviewQuestOnBackend({ title: normalizedTitle, assignedFor: effectiveDate, proof: proof || {}, verificationMode: proof?.verificationMode || "AI" });
+        const assessment = await reviewQuestOnBackend({ title: normalizedTitle, assignedFor: effectiveDate, proof: proof || {} });
         if (assessment.decision !== "APPROVE") throw new Error([assessment.reason, assessment.question].filter(Boolean).join(" "));
         proof = { ...proof, reviewId: assessment.id };
       }

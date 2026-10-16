@@ -1,6 +1,6 @@
-# Achievement celebrations, understanding proof, and weekly preparation bosses
+# Ordinary quest completion
 
-Version 2.10.0 builds on the preserved 2.9.7 source. It does not add payments, paid ranks, a shop, voice generation, or speculative new boss categories.
+The mandatory AI approval step and completion-method selector have been removed from ordinary quests. The original proof form is restored. The backend checks the quest's evidence format without calling OpenAI, then issues the usual server-bound receipt before the existing reward transaction. Timer/GPS requirements, attachment ownership, learning takeaways, expiry, single-use receipts and duplicate-reward protection remain enforced. Weekly preparation boss review is separate.
 
 ## Player experience
 
@@ -59,4 +59,3 @@ The original production migration ledger must be retained; apply only the review
 Ordinary quest proof windows default to **Self-reported · Free**. The player supplies the quest's required evidence and explicitly confirms completion. The backend loads the real objective, checks eligibility and evidence format, and issues a normal owner-bound, expiring, single-use receipt with `model: SELF_REPORTED` and `snapshot.verification_mode: SELF_REPORTED`. This path never calls an AI provider and does not claim independent verification.
 
 Learning quests still require three distinct takeaways. Photo/video quests still require their original owned attachment. Timer/GPS requirements and weekly preparation boss review cannot be replaced by self-report. Existing reward, XP, daily-credit, expiry and duplicate-completion rules remain in the database transaction. Optional AI review stays available when the provider account has quota.
-

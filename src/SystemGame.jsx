@@ -13,9 +13,6 @@ import { CLASS_TRACKS, createClassSoundtrack, soundtrackVolume } from "./systemM
 import { effectiveAttributes } from "./systemEquipmentCore.js";
 import { achievementEvents, appendAchievements } from "./systemAchievementCore.js";
 import WeeklyBoss from "./WeeklyBoss.jsx";
-import { reviewQuestOnBackend } from "./systemLivingApi.js";
-import { canReuseApprovedReview } from "./systemReviewCore.js";
-import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { assignBossOnBackend, bootstrapAuthoritativeProfile, hydrateStructuredProfile, setBossObjectiveOnBackend, resolveBossOnBackend, evaluateAdaptiveQuest, acceptMustQuestOnBackend, updateRoutineOnBackend, routineCheckinOnBackend, completeQuestByTitleOnBackend, applyExpiredQuestPenaltiesOnBackend, uploadProofFile, loadAttributeCredits, allocateAttributeCreditOnBackend, startGpsSessionOnBackend, finishGpsWorkoutOnBackend, finishGpsSessionOnBackend, loadTrainingCatalog, uploadProofImage, submitProofRecordOnBackend, submitSkillAttemptOnBackend, saveLearningRecord, countLearningRecordsForSkill, evaluateSkillOnBackend, addPerformanceLogOnBackend, addWealthLogOnBackend, updateGoalProgressOnBackend, claimGoalOnBackend, createGoalOnBackend, addCustomInventoryOnBackend, claimRewardOnBackend, setInventoryStateOnBackend, refreshProgressionUnlocksOnBackend, equipTitleOnBackend, loadDailyCommandBrief, saveCloudPreferences, startTimedWorkoutOnBackend, completeTimedWorkoutOnBackend, completeWorkoutOnBackend } from "./systemCloud.js";
 import { buildQuestActionKey, getQuestProofType, mustStateMatchesQuest, getServerClockOffsetMs, isMustStateReady, QUEST_PROOF_LABELS } from "./systemQuestCore.js";
 import { createPortal } from "react-dom";
@@ -6804,8 +6801,9 @@ export function QuestProofModal({
   proofType,
   close,
   verified,
-  assignedFor = todayKey(),
 }) {
+  const submitLock = useRef(false);
+  const uploadedProof = useRef(null);
   const [
     note,
     setNote,
@@ -6845,13 +6843,6 @@ export function QuestProofModal({
     error,
     setError,
   ] = useState("");
-
-  const [review, setReview] = useState(null);
-  const [verificationMode, setVerificationMode] = useState("SELF_REPORTED");
-  const [followUp, setFollowUp] = useState("");
-  const submitLock = useRef(false);
-  const approvedProof = useRef(null);
-  const uploadedProof = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -6962,9 +6953,93 @@ export function QuestProofModal({
     proofType
   ];
 
+  function isVagueResult(
+    value
+  ) {
+    const normalized =
+      String(
+        value ||
+        ""
+      )
+        .trim()
+        .toLowerCase()
+        .replace(
+          /[.!?,]/g,
+          ""
+        );
+
+    const vague =
+      new Set([
+        "done",
+        "finished",
+        "complete",
+        "completed",
+        "yes",
+        "did it",
+        "done it",
+        "task done",
+        "all done",
+      ]);
+
+    return (
+      !normalized ||
+      vague.has(
+        normalized
+      ) ||
+      normalized.length <
+        12
+    );
+  }
+
   async function submit() {
     if (submitLock.current) return;
     setError("");
+
+    if (
+      proofType ===
+        "PERFORMANCE" &&
+      isVagueResult(
+        detail
+      )
+    ) {
+      setError(
+        "RESULT NOTE IS TOO VAGUE. STATE WHAT YOU COMPLETED AND INCLUDE A MEASURABLE RESULT SUCH AS REPS, ROUNDS, TIME OR DISTANCE."
+      );
+      return;
+    }
+
+    if (
+      proofType ===
+        "LEARNING" &&
+      (
+        detail.trim().length <
+          20 ||
+        takeaways
+          .split("\n")
+          .filter(
+            (item) =>
+              item.trim()
+          ).length < 3
+      )
+    ) {
+      setError(
+        "EXPLAIN WHAT YOU LEARNED AND ENTER AT LEAST 3 TAKEAWAYS — ONE PER LINE."
+      );
+      return;
+    }
+
+    if (
+      proofType ===
+        "RESULT" &&
+      isVagueResult(
+        detail
+      )
+    ) {
+      setError(
+        "INSUFFICIENT RESULT DETAIL. STATE WHAT YOU COMPLETED, THE OUTCOME PRODUCED, AND WHAT THE EVIDENCE DEMONSTRATES."
+      );
+      return;
+    }
 
     if (
       proofType ===
@@ -6989,11 +7064,36 @@ export function QuestProofModal({
     }
 
     if (
-      (proofType === "HONOR" || verificationMode === "SELF_REPORTED") &&
+      proofType ===
+        "VIDEO" &&
+      detail.trim().length <
+        20
+    ) {
+      setError(
+        "ADD A SHORT REFLECTION: WHAT YOU DID WELL AND ONE THING YOU WILL IMPROVE."
+      );
+      return;
+    }
+
+    if (
+      proofType ===
+        "HONOR" &&
       !honorConfirmed
     ) {
       setError(
         "CONFIRM THAT THE OBJECTIVE IS COMPLETE BEFORE SUBMITTING."
+      );
+      return;
+    }
+
+    if (
+      proofType ===
+        "PHOTO" &&
+      note.trim().length <
+        12
+    ) {
+      setError(
+        "EXPLAIN WHAT THE PHOTO PROVES BEFORE SUBMITTING."
       );
       return;
     }
@@ -7018,6 +7118,7 @@ export function QuestProofModal({
       }
 
       const proof = {
+        honorConfirmed,
         type:
           proofType,
         verifiedAt:
@@ -7051,17 +7152,9 @@ export function QuestProofModal({
           "",
       };
 
-      const canonical = normalizeReviewProof({ ...proof, honorConfirmed,
-        detail: proof.detail + (followUp.trim() ? `\nAdditional detail: ${followUp.trim()}` : "") });
-      const evidenceKey = JSON.stringify(canonical);
-      const reviewTarget = `${assignedFor}:${quest.name}:${verificationMode}`;
-      const assessment = canReuseApprovedReview(approvedProof.current, evidenceKey, reviewTarget)
-        ? approvedProof.current.review
-        : await reviewQuestOnBackend({ title: quest.name, assignedFor, proof: canonical, verificationMode });
-      setReview(assessment);
-      if (assessment.decision !== "APPROVE") return;
-      approvedProof.current = { key: evidenceKey, target: reviewTarget, review: assessment };
-      await verified({ ...proof, ...canonical, reviewId: assessment.id, reviewMessage: assessment.reason, verificationMode });
+      await verified(
+        proof
+      );
     } catch (submitError) {
       const rawMessage =
         String(
@@ -7069,7 +7162,14 @@ export function QuestProofModal({
           "THE SYSTEM COULD NOT VERIFY THIS PROOF."
         );
 
-      setError(rawMessage.replace(/_/g, " "));
+      setError(
+        rawMessage
+          .replace(
+            /_/g,
+            " "
+          )
+          .toUpperCase()
+      );
     } finally {
       submitLock.current = false;
       setBusy(false);
@@ -7295,14 +7395,8 @@ export function QuestProofModal({
           </>
         )}
 
-        <SystemField label="COMPLETION METHOD">
-          <select value={verificationMode} disabled={busy} onChange={event => { setVerificationMode(event.target.value); setReview(null); setError(""); approvedProof.current = null; }}>
-            <option value="SELF_REPORTED">Self-reported · Free</option>
-            <option value="AI">AI review · Optional</option>
-          </select>
-        </SystemField>
-
-        {(proofType === "HONOR" || verificationMode === "SELF_REPORTED") && (
+        {proofType ===
+          "HONOR" && (
           <label className="proof-honor-confirmation">
             <input
               type="checkbox"
@@ -7318,17 +7412,6 @@ export function QuestProofModal({
             </span>
           </label>
         )}
-
-        <p className="proof-understanding-note">{verificationMode === "SELF_REPORTED"
-          ? "Free completion records your own confirmation and required evidence. It is labelled self-reported; AI does not assess your result."
-          : "Explain naturally. AI reviews the meaning of your result; spelling does not need to be perfect. If AI is unavailable, choose self-reported completion."}</p>
-        {review && <div className="proof-review-result" role="status">
-          <strong>{review.decision === "APPROVE" ? (verificationMode === "SELF_REPORTED" ? "SELF-REPORTED COMPLETION" : "PROOF ACCEPTED") : "MORE DETAIL NEEDED"}</strong>
-          <p>{review.reason}</p>{review.question && <p>{review.question}</p>}
-        </div>}
-        {review && review.decision !== "APPROVE" && <SystemField label="ANSWER THE SYSTEM">
-          <textarea maxLength={1000} value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="Add the missing detail. Your original proof stays above."/>
-        </SystemField>}
 
         {error && (
           <div className="proof-error">
@@ -7348,6 +7431,7 @@ export function QuestProofModal({
           </button>
 
           <button
+            data-sfx="success"
             type="button"
             disabled={
               busy
@@ -7357,8 +7441,8 @@ export function QuestProofModal({
             }
           >
             {busy
-              ? "RECORDING..."
-              : verificationMode === "SELF_REPORTED" ? "COMPLETE QUEST · SELF-REPORTED" : "SUBMIT PROOF"}
+              ? "VERIFYING..."
+              : "SUBMIT PROOF"}
           </button>
         </div>
       </div>
