@@ -30,6 +30,7 @@ npm run build
 - [Current release notes](START_HERE_2_9_7.md).
 - [API setup](API_SETUP.md).
 - [Architecture](docs/ARCHITECTURE.md).
+- [Achievement celebrations, quest review and weekly preparation bosses](docs/LIVING_SYSTEM.md).
 - [Historical documentation](docs/history/).
 
 The app files, three Edge Functions, local Supabase configuration, and recovered backend baseline are versioned here. Secrets and personal/player records are not committed.

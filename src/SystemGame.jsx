@@ -8,6 +8,11 @@ import { formatAwarenessDuration, useSystemAwareness } from "./systemAwareness.j
 import { getFullAnalytics, generateTrainingPath } from "./systemAI.js";
 import { SectionLabel, PageHero, SystemField, SystemModalPortal } from "./systemUI.jsx";
 import { hasRaidEntryKey } from "./systemBossCore.js";
+import AchievementCelebration from "./AchievementCelebration.jsx";
+import { achievementEvents, appendAchievements } from "./systemAchievementCore.js";
+import WeeklyBoss from "./WeeklyBoss.jsx";
+import { reviewQuestOnBackend } from "./systemLivingApi.js";
+import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { assignBossOnBackend, bootstrapAuthoritativeProfile, hydrateStructuredProfile, setBossObjectiveOnBackend, resolveBossOnBackend, evaluateAdaptiveQuest, acceptMustQuestOnBackend, updateRoutineOnBackend, routineCheckinOnBackend, completeQuestByTitleOnBackend, applyExpiredQuestPenaltiesOnBackend, uploadProofFile, loadAttributeCredits, allocateAttributeCreditOnBackend, startGpsSessionOnBackend, finishGpsWorkoutOnBackend, finishGpsSessionOnBackend, loadTrainingCatalog, uploadProofImage, submitProofRecordOnBackend, submitSkillAttemptOnBackend, saveLearningRecord, countLearningRecordsForSkill, evaluateSkillOnBackend, addPerformanceLogOnBackend, addWealthLogOnBackend, updateGoalProgressOnBackend, claimGoalOnBackend, createGoalOnBackend, addCustomInventoryOnBackend, claimRewardOnBackend, setInventoryStateOnBackend, refreshProgressionUnlocksOnBackend, equipTitleOnBackend, loadDailyCommandBrief, saveCloudPreferences, startTimedWorkoutOnBackend, completeTimedWorkoutOnBackend, completeWorkoutOnBackend } from "./systemCloud.js";
 import { buildQuestActionKey, getQuestProofType, mustStateMatchesQuest, getServerClockOffsetMs, isMustStateReady, QUEST_PROOF_LABELS } from "./systemQuestCore.js";
 import { createPortal } from "react-dom";
@@ -3630,6 +3635,10 @@ export function BossGate({
         profile.bossQuests.length
     );
 
+  if (!activeBoss || activeBoss.metadata?.kind === "WEEKLY_PREPARATION") {
+    return <WeeklyBoss profile={profile} applyAuthoritativeProfile={applyAuthoritativeProfile} />;
+  }
+
   async function createSystemBoss() {
     setBossError("");
     setBossNotice("");
@@ -6771,6 +6780,7 @@ export function QuestPage({
 
       {pendingProof && (
         <QuestProofModal
+          assignedFor={date}
           quest={
             pendingProof.quest
           }
@@ -6804,8 +6814,7 @@ export function QuestPage({
                 type:
                   "SUCCESS",
                 text:
-                  currentProof.quest.name +
-                  " • PROOF VERIFIED",
+                  currentProof.quest.name + " • " + (proof.reviewMessage || "PROOF VERIFIED"),
               });
             } finally {
               releaseQuestAction(
@@ -6946,6 +6955,7 @@ export function QuestProofModal({
   proofType,
   close,
   verified,
+  assignedFor = todayKey(),
 }) {
   const [
     note,
@@ -6986,6 +6996,12 @@ export function QuestProofModal({
     error,
     setError,
   ] = useState("");
+
+  const [review, setReview] = useState(null);
+  const [followUp, setFollowUp] = useState("");
+  const submitLock = useRef(false);
+  const approvedProof = useRef(null);
+  const uploadedProof = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -7096,92 +7112,9 @@ export function QuestProofModal({
     proofType
   ];
 
-  function isVagueResult(
-    value
-  ) {
-    const normalized =
-      String(
-        value ||
-        ""
-      )
-        .trim()
-        .toLowerCase()
-        .replace(
-          /[.!?,]/g,
-          ""
-        );
-
-    const vague =
-      new Set([
-        "done",
-        "finished",
-        "complete",
-        "completed",
-        "yes",
-        "did it",
-        "done it",
-        "task done",
-        "all done",
-      ]);
-
-    return (
-      !normalized ||
-      vague.has(
-        normalized
-      ) ||
-      normalized.length <
-        12
-    );
-  }
-
   async function submit() {
+    if (submitLock.current) return;
     setError("");
-
-    if (
-      proofType ===
-        "PERFORMANCE" &&
-      isVagueResult(
-        detail
-      )
-    ) {
-      setError(
-        "RESULT NOTE IS TOO VAGUE. STATE WHAT YOU COMPLETED AND INCLUDE A MEASURABLE RESULT SUCH AS REPS, ROUNDS, TIME OR DISTANCE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
-        "LEARNING" &&
-      (
-        detail.trim().length <
-          20 ||
-        takeaways
-          .split("\n")
-          .filter(
-            (item) =>
-              item.trim()
-          ).length < 3
-      )
-    ) {
-      setError(
-        "EXPLAIN WHAT YOU LEARNED AND ENTER AT LEAST 3 TAKEAWAYS — ONE PER LINE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
-        "RESULT" &&
-      isVagueResult(
-        detail
-      )
-    ) {
-      setError(
-        "INSUFFICIENT RESULT DETAIL. STATE WHAT YOU COMPLETED, THE OUTCOME PRODUCED, AND WHAT THE EVIDENCE DEMONSTRATES."
-      );
-      return;
-    }
 
     if (
       proofType ===
@@ -7207,18 +7140,6 @@ export function QuestProofModal({
 
     if (
       proofType ===
-        "VIDEO" &&
-      detail.trim().length <
-        20
-    ) {
-      setError(
-        "ADD A SHORT REFLECTION: WHAT YOU DID WELL AND ONE THING YOU WILL IMPROVE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
         "HONOR" &&
       !honorConfirmed
     ) {
@@ -7228,18 +7149,7 @@ export function QuestProofModal({
       return;
     }
 
-    if (
-      proofType ===
-        "PHOTO" &&
-      note.trim().length <
-        12
-    ) {
-      setError(
-        "EXPLAIN WHAT THE PHOTO PROVES BEFORE SUBMITTING."
-      );
-      return;
-    }
-
+    submitLock.current = true;
     setBusy(true);
 
     try {
@@ -7254,10 +7164,8 @@ export function QuestProofModal({
         ) &&
         file
       ) {
-        uploadedFile =
-          await uploadProofFile(
-            file
-          );
+        uploadedFile = uploadedProof.current?.file === file ? uploadedProof.current.uploaded : await uploadProofFile(file);
+        uploadedProof.current = { file, uploaded: uploadedFile };
       }
 
       const proof = {
@@ -7294,9 +7202,16 @@ export function QuestProofModal({
           "",
       };
 
-      await verified(
-        proof
-      );
+      const canonical = normalizeReviewProof({ ...proof, honorConfirmed,
+        detail: proof.detail + (followUp.trim() ? `\nAdditional detail: ${followUp.trim()}` : "") });
+      const evidenceKey = JSON.stringify(canonical);
+      const assessment = approvedProof.current?.key === evidenceKey
+        ? approvedProof.current.review
+        : await reviewQuestOnBackend({ title: quest.name, assignedFor, proof: canonical });
+      setReview(assessment);
+      if (assessment.decision !== "APPROVE") return;
+      approvedProof.current = { key: evidenceKey, review: assessment };
+      await verified({ ...proof, ...canonical, reviewId: assessment.id, reviewMessage: assessment.reason });
     } catch (submitError) {
       const rawMessage =
         String(
@@ -7304,15 +7219,9 @@ export function QuestProofModal({
           "THE SYSTEM COULD NOT VERIFY THIS PROOF."
         );
 
-      setError(
-        rawMessage
-          .replace(
-            /_/g,
-            " "
-          )
-          .toUpperCase()
-      );
+      setError(rawMessage.replace(/_/g, " "));
     } finally {
+      submitLock.current = false;
       setBusy(false);
     }
   }
@@ -7554,6 +7463,15 @@ export function QuestProofModal({
           </label>
         )}
 
+        <p className="proof-understanding-note">Explain naturally. THE SYSTEM reviews the meaning of your result; spelling does not need to be perfect.</p>
+        {review && <div className="proof-review-result" role="status">
+          <strong>{review.decision === "APPROVE" ? "PROOF ACCEPTED" : "SYSTEM REVIEW"}</strong>
+          <p>{review.reason}</p>{review.question && <p>{review.question}</p>}
+        </div>}
+        {review && review.decision !== "APPROVE" && <SystemField label="ANSWER THE SYSTEM">
+          <textarea maxLength={1000} value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="Add the missing detail. Your original proof stays above."/>
+        </SystemField>}
+
         {error && (
           <div className="proof-error">
             ⚠ {error}
@@ -7572,7 +7490,6 @@ export function QuestProofModal({
           </button>
 
           <button
-            data-sfx="success"
             type="button"
             disabled={
               busy
@@ -18129,6 +18046,9 @@ export function EvolutionModal({
 }
 
 export function SystemGame() {
+  const authoritativeProfileRef = useRef(null);
+  const seenCelebrationsRef = useRef(new Set());
+  const [celebrationQueue, setCelebrationQueue] = useState([]);
   const [profile, setProfile] =
     useState(null);
 
@@ -18398,6 +18318,8 @@ export function SystemGame() {
 
       // XP and Must Quest penalties are authoritative on the server.
       // Never deduct XP from a stale browser cache during startup.
+      authoritativeProfileRef.current = loaded;
+      try { seenCelebrationsRef.current = new Set(JSON.parse(localStorage.getItem(`systemCelebrations:${loaded.fingerprint}`) || "[]")); } catch { seenCelebrationsRef.current = new Set(); }
       setProfile(
         loaded
       );
@@ -18600,6 +18522,7 @@ export function SystemGame() {
       false
     );
 
+    authoritativeProfileRef.current = newProfile;
     setProfile(
       newProfile
     );
@@ -18718,13 +18641,22 @@ export function SystemGame() {
   }
 
   function applyAuthoritativeProfile(
-    updated
+    updated,
+    options = {}
   ) {
     const clean =
       normalizeProfile(
         updated
       );
 
+    if (options.announce !== false && authoritativeProfileRef.current) {
+      const events = achievementEvents(authoritativeProfileRef.current, clean);
+      const previouslySeen = new Set(seenCelebrationsRef.current);
+      setCelebrationQueue(queue => appendAchievements(queue, events, previouslySeen));
+      for (const event of events) seenCelebrationsRef.current.add(event.id);
+      try { localStorage.setItem(`systemCelebrations:${clean.fingerprint}`, JSON.stringify([...seenCelebrationsRef.current].slice(-150))); } catch { /* Presentation cache only. */ }
+    }
+    authoritativeProfileRef.current = clean;
     setProfile(
       clean
     );
@@ -18751,7 +18683,8 @@ export function SystemGame() {
         event?.detail
       ) {
         applyAuthoritativeProfile(
-          event.detail
+          event.detail,
+          { announce: false }
         );
       }
     }
@@ -19764,10 +19697,15 @@ export function SystemGame() {
         }
       />
 
-      <EvolutionModal
+      <AchievementCelebration
+        event={celebrationQueue[0] || null}
+        onDismiss={() => setCelebrationQueue(queue => queue.slice(1))}
+        onSound={type => { if (sfxEnabled && sfxVolume > 0) playSFX(type, sfxVolume); }}
+      />
+      {!celebrationQueue.length && <EvolutionModal
         profile={profile}
         saveProfile={saveProfile}
-      />
+      />}
 
       <div
         id="system-modal-root"

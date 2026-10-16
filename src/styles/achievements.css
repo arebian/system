@@ -1,0 +1,17 @@
+.achievement-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:20px;background:rgba(3,5,12,.87);overflow-y:auto;color:#eef4ff}
+.achievement-dialog{width:min(100%,460px);margin:auto;text-align:center;background:linear-gradient(155deg,#172032,#090e19 65%);border:1px solid #637eac;border-radius:12px;padding:32px 28px;box-shadow:0 0 65px #30538945;animation:achievement-enter .35s ease-out}
+.achievement-dialog>small{display:block;color:#aebfd8;font:11px 'Share Tech Mono',monospace;letter-spacing:1.5px;line-height:1.7}
+.achievement-dialog h2{font:600 17px 'Rajdhani',sans-serif;letter-spacing:4px;color:#b8cae5;margin:10px 0}
+.achievement-name{display:block;font:700 clamp(34px,7vw,58px) 'Rajdhani',sans-serif;line-height:1.1;color:#fff;overflow-wrap:anywhere}
+.achievement-dialog>p{font-size:15px;line-height:1.6;color:#c4d0e4;margin:18px 0}
+.achievement-dialog .achievement-level{font:14px 'Share Tech Mono',monospace;color:#e7ca86;margin:12px 0}
+.achievement-emblem{width:130px;margin:18px auto}.achievement-emblem svg{fill:none;stroke:#8fbaff;stroke-width:2;filter:drop-shadow(0 0 10px #74a8ff77)}
+.achievement-emblem path:last-child{stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.achievement-major .achievement-dialog{border-color:#af8c44;background:linear-gradient(155deg,#2a2317,#0d0e17 65%);box-shadow:0 0 80px #b5903430}
+.achievement-major .achievement-emblem{width:155px}.achievement-major .achievement-emblem svg{stroke:#f1c979;filter:drop-shadow(0 0 14px #f1c97955)}
+.achievement-gains{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px}.achievement-gains li{display:flex;justify-content:space-between;padding:10px 12px;background:#ffffff08;border:1px solid #ffffff15;font:12px 'Share Tech Mono',monospace}.achievement-gains b,.achievement-xp{color:#a4e7b8}
+.achievement-dialog>button{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;margin:24px 0 15px;padding:14px 18px;border:1px solid #97b3dc;background:#263b5b;color:#fff;font:600 16px 'Rajdhani',sans-serif;letter-spacing:2px;cursor:pointer}
+.achievement-dialog>button:focus-visible{outline:3px solid #f1c979;outline-offset:4px}.achievement-major .achievement-dialog>button{background:#49391f;border-color:#d4b16b}
+@keyframes achievement-enter{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:480px){.achievement-overlay{padding:12px}.achievement-dialog{padding:22px 18px}.achievement-emblem{width:100px;margin:12px auto}.achievement-major .achievement-emblem{width:120px}}
+@media(prefers-reduced-motion:reduce){.achievement-dialog{animation:none}.achievement-emblem svg{filter:none}}
