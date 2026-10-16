@@ -36,14 +36,22 @@ async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetc
       let upstream: any = {};
       try { upstream = await response.json(); } catch { /* Non-JSON outage. */ }
       const code = String(upstream?.error?.code || "");
+      const type = String(upstream?.error?.type || "");
+      // Some providers omit error.code or reuse rate_limit_exceeded for billing.
+      // Inspect text in memory, but emit only allowlisted categories.
+      const quota = /insufficient_quota|billing[_ -](?:hard[_ -]limit|not[_ -]active)|exceed.{0,40}(?:current|billing|monthly) quota|run out of credits|no balance left|credit balance|monthly (?:spend|usage) limit/i
+        .test([code, type, String(upstream?.error?.message || "").slice(0, 2000)].join(" "));
       const failure = response.status === 401 ? "REVIEW_AUTH_FAILED"
-        : code === "insufficient_quota" ? "REVIEW_QUOTA_EXHAUSTED"
+        : quota ? "REVIEW_QUOTA_EXHAUSTED"
         : code === "model_not_found" ? "REVIEW_MODEL_UNAVAILABLE"
         : response.status === 403 ? "REVIEW_ACCESS_DENIED"
         : response.status === 429 ? "REVIEW_PROVIDER_RATE_LIMITED"
         : response.status === 400 ? "REVIEW_REQUEST_REJECTED"
         : "REVIEW_UNAVAILABLE";
-      console.error("QUEST_REVIEW_PROVIDER_FAILURE", JSON.stringify({ status: response.status, failure }));
+      const knownCodes = ["insufficient_quota", "rate_limit_exceeded", "invalid_api_key", "model_not_found", "billing_hard_limit_reached"];
+      const knownTypes = ["insufficient_quota", "rate_limit_error", "tokens", "requests", "invalid_request_error"];
+      console.error("QUEST_REVIEW_PROVIDER_FAILURE", JSON.stringify({ status: response.status, failure,
+        code: knownCodes.includes(code) ? code : "other", type: knownTypes.includes(type) ? type : "other" }));
       throw new PublicFailure(failure, 503);
     }
     const parsed = JSON.parse(responseText(await response.json()));

@@ -61,6 +61,18 @@ test("an image path from another account is rejected before reaching the provide
   assert.equal(f.requests.length, 0);
   assert.equal(f.stored.length, 0);
 });
+test("a 429 with a quota type or billing message is not misreported as temporary traffic", async () => {
+  for (const error of [
+    { type: "insufficient_quota" },
+    { code: "rate_limit_exceeded", message: "You exceeded your current quota, please check your plan and billing details." },
+    { code: "billing_hard_limit_reached" },
+  ]) {
+    const f = fixture({ fetcher: async () => new Response(JSON.stringify({ error }), { status: 429 }) });
+    const result = await handleLivingSystemAction(f.options);
+    assert.equal(result.body.error, "REVIEW_QUOTA_EXHAUSTED");
+    assert.equal(f.stored.length, 0);
+  }
+});
 test("an hourly limit blocks provider spending and preserves the submission", async () => {
   const f = fixture({ client: { rpc: async () => ({ data: false, error: null }) } });
   const result = await handleLivingSystemAction(f.options);
