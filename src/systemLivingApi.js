@@ -1,6 +1,16 @@
 import { supabase } from "./supabaseClient.js";
 
 const messages = {
+  SELF_REPORT_NOT_AVAILABLE: "This quest requires its original timer, GPS or boss verification. Self-report cannot replace that requirement.",
+  REVIEW_PROOF_TYPE_MISMATCH: "The quest's evidence requirement changed. Close this window and open the quest again.",
+  REVIEW_KEY_MISSING: "Quest review is not configured yet. The app owner needs to connect its AI service. Your proof is saved here.",
+  REVIEW_AUTH_FAILED: "The AI service rejected its connection key. The app owner needs to update it. Your proof is still here.",
+  REVIEW_QUOTA_EXHAUSTED: "The AI service has run out of credits. The app owner needs to restore its quota. Your proof is still here.",
+  REVIEW_MODEL_UNAVAILABLE: "The configured AI model is unavailable to this app. Your proof is still here.",
+  REVIEW_ACCESS_DENIED: "The AI service has denied this app access. Your proof is still here.",
+  REVIEW_PROVIDER_RATE_LIMITED: "The AI service is busy. Wait a moment, then retry with the same proof.",
+  REVIEW_REQUEST_REJECTED: "The AI service could not process this review. Your proof is still here; the app owner needs to check the service configuration.",
+  REVIEW_TIMEOUT: "The AI review took too long. Your proof is still here; please retry.",
   REVIEW_UNAVAILABLE: "Quest review is temporarily unavailable. Your proof is still here; please retry.",
   REVIEW_RESPONSE_INVALID: "The review could not be completed. Please retry without changing your proof.",
   REVIEW_RATE_LIMITED: "You have reached the hourly review limit. Your proof is preserved; try again later.",
