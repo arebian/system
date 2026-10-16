@@ -18,7 +18,7 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
 }
 
 async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher }: any) {
-  if (!apiKey) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+  if (!apiKey?.trim()) throw new PublicFailure("REVIEW_KEY_MISSING", 503);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 24000);
   try {
@@ -31,11 +31,26 @@ async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetc
         instructions: REVIEW_INSTRUCTIONS, input: [{ role: "user", content }],
         text: { format: { type: "json_schema", name: "quest_review", strict: true, schema: REVIEW_SCHEMA } } }),
     });
-    if (!response.ok) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    if (!response.ok) {
+      // Never log provider messages: they can contain credentials or player text.
+      let upstream: any = {};
+      try { upstream = await response.json(); } catch { /* Non-JSON outage. */ }
+      const code = String(upstream?.error?.code || "");
+      const failure = response.status === 401 ? "REVIEW_AUTH_FAILED"
+        : code === "insufficient_quota" ? "REVIEW_QUOTA_EXHAUSTED"
+        : code === "model_not_found" ? "REVIEW_MODEL_UNAVAILABLE"
+        : response.status === 403 ? "REVIEW_ACCESS_DENIED"
+        : response.status === 429 ? "REVIEW_PROVIDER_RATE_LIMITED"
+        : response.status === 400 ? "REVIEW_REQUEST_REJECTED"
+        : "REVIEW_UNAVAILABLE";
+      console.error("QUEST_REVIEW_PROVIDER_FAILURE", JSON.stringify({ status: response.status, failure }));
+      throw new PublicFailure(failure, 503);
+    }
     const parsed = JSON.parse(responseText(await response.json()));
     return guardReviewDecision(parsed, snapshot, proof);
   } catch (error) {
     if (error instanceof PublicFailure) throw error;
+    if (error instanceof Error && error.name === "AbortError") throw new PublicFailure("REVIEW_TIMEOUT", 503);
     throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
   } finally { clearTimeout(timeout); }
 }

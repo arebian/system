@@ -32,11 +32,27 @@ test("authentication and provider failure never create approved receipts", async
   assert.equal((await handleLivingSystemAction(unauthenticated.options)).status, 401);
   assert.equal(unauthenticated.stored.length, 0);
   const noModel = fixture({ apiKey: null });
-  assert.equal((await handleLivingSystemAction(noModel.options)).body.error, "REVIEW_UNAVAILABLE");
+  assert.equal((await handleLivingSystemAction(noModel.options)).body.error, "REVIEW_KEY_MISSING");
   assert.equal(noModel.stored.length, 0);
   const providerFailure = fixture({ fetcher: async () => new Response("provider-error", { status: 503 }) });
   assert.equal((await handleLivingSystemAction(providerFailure.options)).status, 503);
   assert.equal(providerFailure.stored.length, 0);
+});
+test("provider errors distinguish configuration, billing and temporary failures without approving evidence", async () => {
+  for (const [status, code, expected] of [
+    [401, "invalid_api_key", "REVIEW_AUTH_FAILED"],
+    [429, "insufficient_quota", "REVIEW_QUOTA_EXHAUSTED"],
+    [404, "model_not_found", "REVIEW_MODEL_UNAVAILABLE"],
+    [403, "permission_denied", "REVIEW_ACCESS_DENIED"],
+    [429, "rate_limit_exceeded", "REVIEW_PROVIDER_RATE_LIMITED"],
+    [400, "invalid_request_error", "REVIEW_REQUEST_REJECTED"],
+  ]) {
+    const f = fixture({ fetcher: async () => new Response(JSON.stringify({ error: { code, message: "private provider details" } }), { status }) });
+    const result = await handleLivingSystemAction(f.options);
+    assert.equal(result.body.error, expected);
+    assert.equal(f.stored.length, 0);
+    assert.ok(!JSON.stringify(result).includes("private provider details"));
+  }
 });
 test("an image path from another account is rejected before reaching the provider", async () => {
   const f = fixture({ payload: { title: "READING", proof: { type: "RESULT", detail: "Read 25 min", imagePath: "someone-else/private.png" } } });
