@@ -1,3 +1,5 @@
+import { reviewQuestOnBackend } from "./systemLivingApi.js";
+import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { supabase } from "./supabaseClient.js";
 import { getServerClockOffsetMs } from "./systemQuestCore.js";
 import {
@@ -251,6 +253,7 @@ export async function bootstrapAuthoritativeProfile() {
 
   const legacy = {
     ...base,
+    equipment: state?.equipment || null,
 
     name:
       row.name ??
@@ -641,6 +644,12 @@ export async function completeQuestByTitleOnBackend({
       normalizedTitle
         .toUpperCase(),
     async () => {
+      if (proof?.type !== "TIME") proof = { ...proof, ...normalizeReviewProof(proof || {}) };
+      if (proof?.type !== "TIME" && !proof?.reviewId) {
+        const assessment = await reviewQuestOnBackend({ title: normalizedTitle, assignedFor: effectiveDate, proof: proof || {} });
+        if (assessment.decision !== "APPROVE") throw new Error([assessment.reason, assessment.question].filter(Boolean).join(" "));
+        proof = { ...proof, reviewId: assessment.id };
+      }
       const {
         data,
         error,
@@ -659,6 +668,8 @@ export async function completeQuestByTitleOnBackend({
                 context,
                 legacy_key:
                   legacyKey,
+                proof_review_id: proof?.reviewId || null,
+                proof_honor_confirmed: proof?.honorConfirmed === true,
                 proof_type:
                   proof?.type ||
                   "HONOR",

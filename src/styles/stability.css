@@ -13,3 +13,17 @@
 .app .system-intelligence-launcher{animation:none!important;transform:none!important}
 .app .system-intelligence-launcher::before,.app .system-intelligence-launcher::after{animation:none!important}
 @media(prefers-reduced-motion:reduce){.app .page,.app .mage-reader-page-surface{animation:none!important}}
+
+/* Preserve the crimson character artwork against the light palette. */
+.app.class-assassin.light .class-emblem-atmosphere {
+  background-image:url("/class-emblems/assassin-crimson.png")!important;
+  opacity:.20!important;
+  mix-blend-mode:multiply!important;
+  filter:saturate(.72) contrast(1.04) brightness(1.08)!important;
+}
+.equipment-loadout {padding:20px;margin-bottom:20px}
+.equipment-loadout p {line-height:1.6}
+.equipment-loadout small,.equipment-attribute-detail {display:block;font-size:12px;line-height:1.6;opacity:.85}
+.equipment-loadout button {margin-top:14px;min-height:42px;padding:8px 14px;border:1px solid var(--accent);background:transparent;color:inherit;border-radius:8px;cursor:pointer}
+.equipment-attribute-detail {color:var(--accent);white-space:normal}
+.soundtrack-status {font-size:12px;line-height:1.5}

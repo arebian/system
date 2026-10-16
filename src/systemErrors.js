@@ -21,5 +21,5 @@ export function recoveryMessage(error, area = 'SYSTEM') {
 export function errorEvent(error, area) {
   const code = errorCode(error);
   const allowed = new Set(['NETWORK_UNAVAILABLE','REQUEST_TIMEOUT','UPDATE_RELOAD_REQUIRED','AUTH_REQUIRED','SESSION_EXPIRED','INVALID_JWT','ARCHIVE_TEXT_UNAVAILABLE','ARCHIVE_TEXT_INVALID','AI_UNAVAILABLE','PROFILE_SAVE_FAILED','UNEXPECTED_ERROR']);
-  return { code: allowed.has(code) ? code : 'UNEXPECTED_ERROR', area: ['RUNTIME','AUTH','ARCHIVE','AI','CLASS_SPECIAL','NETWORK'].includes(area) ? area : 'RUNTIME', build: '2.9.7' };
+  return { code: allowed.has(code) ? code : 'UNEXPECTED_ERROR', area: ['RUNTIME','AUTH','ARCHIVE','AI','CLASS_SPECIAL','NETWORK'].includes(area) ? area : 'RUNTIME', build: '2.10.0' };
 }

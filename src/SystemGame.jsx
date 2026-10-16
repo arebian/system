@@ -8,6 +8,14 @@ import { formatAwarenessDuration, useSystemAwareness } from "./systemAwareness.j
 import { getFullAnalytics, generateTrainingPath } from "./systemAI.js";
 import { SectionLabel, PageHero, SystemField, SystemModalPortal } from "./systemUI.jsx";
 import { hasRaidEntryKey } from "./systemBossCore.js";
+import AchievementCelebration from "./AchievementCelebration.jsx";
+import { CLASS_TRACKS, createClassSoundtrack, soundtrackVolume } from "./systemMusicCore.js";
+import { effectiveAttributes } from "./systemEquipmentCore.js";
+import { achievementEvents, appendAchievements } from "./systemAchievementCore.js";
+import WeeklyBoss from "./WeeklyBoss.jsx";
+import { reviewQuestOnBackend } from "./systemLivingApi.js";
+import { canReuseApprovedReview } from "./systemReviewCore.js";
+import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { assignBossOnBackend, bootstrapAuthoritativeProfile, hydrateStructuredProfile, setBossObjectiveOnBackend, resolveBossOnBackend, evaluateAdaptiveQuest, acceptMustQuestOnBackend, updateRoutineOnBackend, routineCheckinOnBackend, completeQuestByTitleOnBackend, applyExpiredQuestPenaltiesOnBackend, uploadProofFile, loadAttributeCredits, allocateAttributeCreditOnBackend, startGpsSessionOnBackend, finishGpsWorkoutOnBackend, finishGpsSessionOnBackend, loadTrainingCatalog, uploadProofImage, submitProofRecordOnBackend, submitSkillAttemptOnBackend, saveLearningRecord, countLearningRecordsForSkill, evaluateSkillOnBackend, addPerformanceLogOnBackend, addWealthLogOnBackend, updateGoalProgressOnBackend, claimGoalOnBackend, createGoalOnBackend, addCustomInventoryOnBackend, claimRewardOnBackend, setInventoryStateOnBackend, refreshProgressionUnlocksOnBackend, equipTitleOnBackend, loadDailyCommandBrief, saveCloudPreferences, startTimedWorkoutOnBackend, completeTimedWorkoutOnBackend, completeWorkoutOnBackend } from "./systemCloud.js";
 import { buildQuestActionKey, getQuestProofType, mustStateMatchesQuest, getServerClockOffsetMs, isMustStateReady, QUEST_PROOF_LABELS } from "./systemQuestCore.js";
 import { createPortal } from "react-dom";
@@ -1656,11 +1664,7 @@ export function addXP(
   ) {
     playSFX(
       "levelup",
-      Number(
-        localStorage.getItem(
-          "systemSfxVolume"
-        )
-      ) || 0.7
+      soundtrackVolume(localStorage.getItem("systemSfxVolume"), 0.7)
     );
   }
 
@@ -2158,181 +2162,31 @@ export function ButtonSFX({
   return null;
 }
 
-export const CLASS_BACKGROUND_MUSIC = {
-  ASSASSIN:
-    "/music/assassin.mp3",
-  TANK:
-    "/music/tank.mp3",
-  MAGE:
-    "/music/mage.mp3",
-  RANGER:
-    "/music/ranger.mp3",
-  COMMANDER:
-    "/music/commander.mp3",
-};
+export const CLASS_BACKGROUND_MUSIC = CLASS_TRACKS;
 
-export function MusicEngine({
-  enabled,
-  volume,
-  path,
-}) {
-  const audioRef =
-    useRef(null);
-
-  // Background music must be an explicit soundtrack choice. Browsers consider
-  // any click a valid audio gesture, so a generic pointer listener made normal
-  // SFX clicks unexpectedly begin the class soundtrack.
-  const userStartedRef =
-    useRef(false);
-
-  function stopCurrent() {
-    if (
-      audioRef.current
-    ) {
-      audioRef.current.pause();
-      audioRef.current.currentTime =
-        0;
-      audioRef.current =
-        null;
-    }
-  }
-
-  function createTrack() {
-    const src =
-      CLASS_BACKGROUND_MUSIC[
-        path
-      ] ||
-      CLASS_BACKGROUND_MUSIC.ASSASSIN;
-
-    const audio =
-      new Audio(src);
-
-    audio.loop = true;
-    audio.preload = "auto";
-
-    audio.volume =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          Number(volume) || 0
-        )
-      );
-
-    audioRef.current =
-      audio;
-
-    return audio;
-  }
-
-  function startMusic({
-    force = false,
-  } = {}) {
-    if (!enabled && !force) {
-      return;
-    }
-
-    let audio =
-      audioRef.current;
-
-    if (!audio) {
-      audio =
-        createTrack();
-    }
-
-    audio.volume =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          Number(volume) || 0
-        )
-      );
-
-    audio
-      .play()
-      .catch(() => {});
-  }
-
+export function MusicEngine({ enabled, volume, path, onStatus }) {
+  const controller = useRef(null);
+  const statusHandler = useRef(onStatus);
+  const config = useRef({ enabled, volume, path });
+  config.current = { enabled, volume, path };
+  statusHandler.current = onStatus;
   useEffect(() => {
-    function handleMusicIntent(event) {
-      const nextEnabled = Boolean(
-        event?.detail?.enabled
-      );
-
-      userStartedRef.current =
-        nextEnabled;
-
-      if (!nextEnabled) {
-        stopCurrent();
-        return;
-      }
-
-      // This event is dispatched directly from the soundtrack toggle's user
-      // click, which keeps autoplay permission tied to that intentional action.
-      startMusic({
-        force: true,
-      });
-    }
-
-    window.addEventListener(
-      "system-music-intent",
-      handleMusicIntent
-    );
-
+    const soundtrack = createClassSoundtrack({ createAudio: src => new Audio(src), onStatus: status => statusHandler.current?.(status) });
+    controller.current = soundtrack;
+    soundtrack.setVisible(document.visibilityState !== "hidden");
+    soundtrack.configure(config.current);
+    const intent = event => soundtrack.setEnabled(event?.detail?.enabled === true);
+    const visibility = () => soundtrack.setVisible(document.visibilityState !== "hidden");
+    window.addEventListener("system-music-intent", intent);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
-      window.removeEventListener(
-        "system-music-intent",
-        handleMusicIntent
-      );
+      window.removeEventListener("system-music-intent", intent);
+      document.removeEventListener("visibilitychange", visibility);
+      controller.current = null;
+      soundtrack.dispose();
     };
-  }, [
-    path,
-    volume,
-  ]);
-
-  useEffect(() => {
-    stopCurrent();
-
-    if (
-      enabled &&
-      userStartedRef.current
-    ) {
-      startMusic({
-        force: true,
-      });
-    }
-
-    return () => {
-      stopCurrent();
-    };
-  }, [path]);
-
-  useEffect(() => {
-    const audio =
-      audioRef.current;
-
-    if (!audio) {
-      return;
-    }
-
-    audio.volume =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          Number(volume) || 0
-        )
-      );
-
-    if (!enabled) {
-      stopCurrent();
-    }
-  }, [
-    enabled,
-    volume,
-  ]);
-
+  }, []);
+  useEffect(() => { controller.current?.configure({ enabled, volume, path }); }, [enabled, volume, path]);
   return null;
 }
 
@@ -2409,7 +2263,7 @@ export function TopBar({
           </strong>
 
           <small>
-            REAL LIFE // RPG • 2.9.7
+            REAL LIFE // RPG • 2.10.0
           </small>
         </div>
       </div>
@@ -2929,7 +2783,7 @@ export function Dashboard({
 
   const total =
     Object.values(
-      profile.attributes
+      effectiveAttributes(profile)
     ).reduce(
       (sum, value) =>
         sum +
@@ -3226,7 +3080,7 @@ export function Dashboard({
         <Stat
           label="TOTAL POWER"
           value={total}
-          sub="CHARACTER INDEX"
+          sub={`BASE ${Object.values(profile.attributes).reduce((sum, value) => sum + Number(value), 0)} + GEAR ${Object.values(profile.equipment?.bonuses || {}).reduce((sum, value) => sum + Number(value), 0)}`}
         />
 
         <Stat
@@ -3629,6 +3483,10 @@ export function BossGate({
         "-" +
         profile.bossQuests.length
     );
+
+  if (!activeBoss || activeBoss.metadata?.kind === "WEEKLY_PREPARATION") {
+    return <WeeklyBoss profile={profile} applyAuthoritativeProfile={applyAuthoritativeProfile} />;
+  }
 
   async function createSystemBoss() {
     setBossError("");
@@ -6771,6 +6629,7 @@ export function QuestPage({
 
       {pendingProof && (
         <QuestProofModal
+          assignedFor={date}
           quest={
             pendingProof.quest
           }
@@ -6804,8 +6663,7 @@ export function QuestPage({
                 type:
                   "SUCCESS",
                 text:
-                  currentProof.quest.name +
-                  " • PROOF VERIFIED",
+                  currentProof.quest.name + " • " + (proof.reviewMessage || "PROOF VERIFIED"),
               });
             } finally {
               releaseQuestAction(
@@ -6946,6 +6804,7 @@ export function QuestProofModal({
   proofType,
   close,
   verified,
+  assignedFor = todayKey(),
 }) {
   const [
     note,
@@ -6986,6 +6845,12 @@ export function QuestProofModal({
     error,
     setError,
   ] = useState("");
+
+  const [review, setReview] = useState(null);
+  const [followUp, setFollowUp] = useState("");
+  const submitLock = useRef(false);
+  const approvedProof = useRef(null);
+  const uploadedProof = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -7096,92 +6961,9 @@ export function QuestProofModal({
     proofType
   ];
 
-  function isVagueResult(
-    value
-  ) {
-    const normalized =
-      String(
-        value ||
-        ""
-      )
-        .trim()
-        .toLowerCase()
-        .replace(
-          /[.!?,]/g,
-          ""
-        );
-
-    const vague =
-      new Set([
-        "done",
-        "finished",
-        "complete",
-        "completed",
-        "yes",
-        "did it",
-        "done it",
-        "task done",
-        "all done",
-      ]);
-
-    return (
-      !normalized ||
-      vague.has(
-        normalized
-      ) ||
-      normalized.length <
-        12
-    );
-  }
-
   async function submit() {
+    if (submitLock.current) return;
     setError("");
-
-    if (
-      proofType ===
-        "PERFORMANCE" &&
-      isVagueResult(
-        detail
-      )
-    ) {
-      setError(
-        "RESULT NOTE IS TOO VAGUE. STATE WHAT YOU COMPLETED AND INCLUDE A MEASURABLE RESULT SUCH AS REPS, ROUNDS, TIME OR DISTANCE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
-        "LEARNING" &&
-      (
-        detail.trim().length <
-          20 ||
-        takeaways
-          .split("\n")
-          .filter(
-            (item) =>
-              item.trim()
-          ).length < 3
-      )
-    ) {
-      setError(
-        "EXPLAIN WHAT YOU LEARNED AND ENTER AT LEAST 3 TAKEAWAYS — ONE PER LINE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
-        "RESULT" &&
-      isVagueResult(
-        detail
-      )
-    ) {
-      setError(
-        "INSUFFICIENT RESULT DETAIL. STATE WHAT YOU COMPLETED, THE OUTCOME PRODUCED, AND WHAT THE EVIDENCE DEMONSTRATES."
-      );
-      return;
-    }
 
     if (
       proofType ===
@@ -7207,18 +6989,6 @@ export function QuestProofModal({
 
     if (
       proofType ===
-        "VIDEO" &&
-      detail.trim().length <
-        20
-    ) {
-      setError(
-        "ADD A SHORT REFLECTION: WHAT YOU DID WELL AND ONE THING YOU WILL IMPROVE."
-      );
-      return;
-    }
-
-    if (
-      proofType ===
         "HONOR" &&
       !honorConfirmed
     ) {
@@ -7228,18 +6998,7 @@ export function QuestProofModal({
       return;
     }
 
-    if (
-      proofType ===
-        "PHOTO" &&
-      note.trim().length <
-        12
-    ) {
-      setError(
-        "EXPLAIN WHAT THE PHOTO PROVES BEFORE SUBMITTING."
-      );
-      return;
-    }
-
+    submitLock.current = true;
     setBusy(true);
 
     try {
@@ -7254,10 +7013,8 @@ export function QuestProofModal({
         ) &&
         file
       ) {
-        uploadedFile =
-          await uploadProofFile(
-            file
-          );
+        uploadedFile = uploadedProof.current?.file === file ? uploadedProof.current.uploaded : await uploadProofFile(file);
+        uploadedProof.current = { file, uploaded: uploadedFile };
       }
 
       const proof = {
@@ -7294,9 +7051,17 @@ export function QuestProofModal({
           "",
       };
 
-      await verified(
-        proof
-      );
+      const canonical = normalizeReviewProof({ ...proof, honorConfirmed,
+        detail: proof.detail + (followUp.trim() ? `\nAdditional detail: ${followUp.trim()}` : "") });
+      const evidenceKey = JSON.stringify(canonical);
+      const reviewTarget = `${assignedFor}:${quest.name}`;
+      const assessment = canReuseApprovedReview(approvedProof.current, evidenceKey, reviewTarget)
+        ? approvedProof.current.review
+        : await reviewQuestOnBackend({ title: quest.name, assignedFor, proof: canonical });
+      setReview(assessment);
+      if (assessment.decision !== "APPROVE") return;
+      approvedProof.current = { key: evidenceKey, target: reviewTarget, review: assessment };
+      await verified({ ...proof, ...canonical, reviewId: assessment.id, reviewMessage: assessment.reason });
     } catch (submitError) {
       const rawMessage =
         String(
@@ -7304,15 +7069,9 @@ export function QuestProofModal({
           "THE SYSTEM COULD NOT VERIFY THIS PROOF."
         );
 
-      setError(
-        rawMessage
-          .replace(
-            /_/g,
-            " "
-          )
-          .toUpperCase()
-      );
+      setError(rawMessage.replace(/_/g, " "));
     } finally {
+      submitLock.current = false;
       setBusy(false);
     }
   }
@@ -7554,6 +7313,15 @@ export function QuestProofModal({
           </label>
         )}
 
+        <p className="proof-understanding-note">Explain naturally. THE SYSTEM reviews the meaning of your result; spelling does not need to be perfect.</p>
+        {review && <div className="proof-review-result" role="status">
+          <strong>{review.decision === "APPROVE" ? "PROOF ACCEPTED" : "SYSTEM REVIEW"}</strong>
+          <p>{review.reason}</p>{review.question && <p>{review.question}</p>}
+        </div>}
+        {review && review.decision !== "APPROVE" && <SystemField label="ANSWER THE SYSTEM">
+          <textarea maxLength={1000} value={followUp} onChange={e => setFollowUp(e.target.value)} placeholder="Add the missing detail. Your original proof stays above."/>
+        </SystemField>}
+
         {error && (
           <div className="proof-error">
             ⚠ {error}
@@ -7572,7 +7340,6 @@ export function QuestProofModal({
           </button>
 
           <button
-            data-sfx="success"
             type="button"
             disabled={
               busy
@@ -8744,8 +8511,9 @@ export function Attributes({
                 </div>
 
                 <strong>
-                  {value}
+                  {effectiveAttributes(profile)[name]}
                 </strong>
+                {Number(profile.equipment?.bonuses?.[name]) > 0 && <small className="equipment-attribute-detail">{value} BASE + {profile.equipment.bonuses[name]} GEAR</small>}
               </div>
 
               <div className="attribute-track">
@@ -8753,7 +8521,7 @@ export function Attributes({
                   style={{
                     width:
                       Math.min(
-                        value,
+                        effectiveAttributes(profile)[name],
                         100
                       ) +
                       "%",
@@ -14737,16 +14505,16 @@ export function Inventory({
   const [rewardName, setRewardName] =
     useState("");
 
-  const systemItems =
-    useMemo(
-      () =>
-        SYSTEM_LOOT.filter(
-          (item) =>
-            profile.level >=
-            item.level
-        ),
-      [profile.level]
-    );
+  const systemItems = (profile.equipment?.items || []).map(item => ({ ...item, id: "GEAR-" + item.id }));
+  const [equipmentPending, setEquipmentPending] = useState(false);
+  const [equipmentError, setEquipmentError] = useState("");
+  const equipmentLock = useRef(false);
+
+  useEffect(() => {
+    setSelected(current => current && String(current.id).startsWith("GEAR-")
+      ? systemItems.find(item => item.id === current.id) || profile.customInventory?.find(item => item.id === current.id) || null
+      : current);
+  }, [profile.equipment, profile.customInventory]);
 
   async function addPhoto(event) {
     const file =
@@ -14864,6 +14632,8 @@ export function Inventory({
   }
 
   async function toggleEquipped(item) {
+    if (equipmentLock.current) return;
+    equipmentLock.current = true; setEquipmentPending(true); setEquipmentError("");
     try {
       await setInventoryStateOnBackend({
         inventoryId:
@@ -14879,10 +14649,8 @@ export function Inventory({
         error
       );
 
-      alert(
-        "THE SYSTEM COULD NOT CHANGE THIS ITEM'S EQUIPPED STATE."
-      );
-    }
+      setEquipmentError("The equipment change could not be confirmed. Refresh your inventory and retry.");
+    } finally { equipmentLock.current = false; setEquipmentPending(false); }
   }
 
   async function toggleShowcase(item) {
@@ -14915,6 +14683,17 @@ export function Inventory({
         title="INVENTORY"
         text="System loot, real gear and matched rewards live in one vault."
       />
+
+      <section className="equipment-loadout card3d" aria-label="Active equipment bonuses">
+        <strong>ACTIVE EQUIPMENT</strong>
+        <p>{Object.entries(profile.equipment?.bonuses || {}).filter(([, value]) => Number(value) > 0).map(([name, value]) => `+${value} ${name}`).join(" · ") || "Equip an unlocked System item to activate its bonus."}</p>
+        <small>Gear bonuses apply while equipped. Earned attributes remain yours. Personal gear descriptions do not create stat bonuses.</small>
+        {equipmentError && <p role="alert">{equipmentError}</p>}
+        <button type="button" disabled={equipmentPending} onClick={async () => {
+          setEquipmentPending(true); setEquipmentError("");
+          try { await refreshInventoryAuthority(); } catch { setEquipmentError("Inventory sync failed. Please retry."); } finally { setEquipmentPending(false); }
+        }}>SYNC INVENTORY</button>
+      </section>
 
       <div className="progress-switch inventory-switch">
         {[
@@ -15394,13 +15173,14 @@ export function Inventory({
               <div className="inventory-authority-actions">
                 <button
                   type="button"
+                  disabled={equipmentPending}
                   onClick={() =>
                     toggleEquipped(
                       selected
                     )
                   }
                 >
-                  {selected.equipped
+                  {equipmentPending ? "SYNCING" : selected.equipped
                     ? "UNEQUIP"
                     : "EQUIP"}
                 </button>
@@ -17121,6 +16901,7 @@ export function Options({
   setTheme,
   musicEnabled,
   setMusicEnabled,
+  musicPlaybackStatus,
   musicVolume,
   setMusicVolume,
   sfxEnabled,
@@ -17147,8 +16928,7 @@ export function Options({
   ] = useState(false);
 
   function toggleSoundtrack() {
-    const nextEnabled =
-      !musicEnabled;
+    const nextEnabled = !musicEnabled;
 
     // MusicEngine listens only for this explicit player choice. Ordinary SFX
     // clicks never dispatch it and therefore cannot start the soundtrack.
@@ -17512,6 +17292,8 @@ export function Options({
                   setMusicVolume
                 }
               />
+              <p role="status" className="soundtrack-status">{musicPlaybackStatus === "PLAYING" ? "SOUNDTRACK PLAYING" : musicPlaybackStatus === "STARTING" ? "STARTING SOUNDTRACK…" : musicPlaybackStatus === "BLOCKED" ? "Tap Play Soundtrack to enable audio in this browser." : musicPlaybackStatus === "ERROR" ? "The soundtrack could not load. Check your connection and retry." : "SOUNDTRACK PAUSED"}</p>
+              {["BLOCKED", "ERROR"].includes(musicPlaybackStatus) && musicEnabled && <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("system-music-intent", { detail: { enabled: true } }))}>PLAY SOUNDTRACK</button>}
             </div>
 
             <div className="options-audio-block">
@@ -18065,11 +17847,7 @@ export function EvolutionModal({
 
     playSFX(
       "levelup",
-      Number(
-        localStorage.getItem(
-          "systemSfxVolume"
-        )
-      ) || 0.7
+      soundtrackVolume(localStorage.getItem("systemSfxVolume"), 0.7)
     );
   }
 
@@ -18129,6 +17907,9 @@ export function EvolutionModal({
 }
 
 export function SystemGame() {
+  const authoritativeProfileRef = useRef(null);
+  const seenCelebrationsRef = useRef(new Set());
+  const [celebrationQueue, setCelebrationQueue] = useState([]);
   const [profile, setProfile] =
     useState(null);
 
@@ -18336,20 +18117,17 @@ export function SystemGame() {
   const [intelligenceVisited, setIntelligenceVisited] = useState(false);
   function openIntelligence() { setIntelligenceVisited(true); setIntelligenceOpen(true); }
 
+  const [musicPlaybackStatus, setMusicPlaybackStatus] = useState("PAUSED");
   const [musicEnabled, setMusicEnabled] =
     useState(
       localStorage.getItem(
         "systemMusic"
-      ) !== "off"
+      ) === "on"
     );
 
   const [musicVolume, setMusicVolume] =
     useState(
-      Number(
-        localStorage.getItem(
-          "systemMusicVolume"
-        )
-      ) || 0.3
+      soundtrackVolume(localStorage.getItem("systemMusicVolume"), 0.3)
     );
 
   const [musicMode, setMusicMode] =
@@ -18368,11 +18146,7 @@ export function SystemGame() {
 
   const [sfxVolume, setSfxVolume] =
     useState(
-      Number(
-        localStorage.getItem(
-          "systemSfxVolume"
-        )
-      ) || 0.7
+      soundtrackVolume(localStorage.getItem("systemSfxVolume"), 0.7)
     );
 
   const [event, setEvent] =
@@ -18398,6 +18172,8 @@ export function SystemGame() {
 
       // XP and Must Quest penalties are authoritative on the server.
       // Never deduct XP from a stale browser cache during startup.
+      authoritativeProfileRef.current = loaded;
+      try { seenCelebrationsRef.current = new Set(JSON.parse(localStorage.getItem(`systemCelebrations:${loaded.fingerprint}`) || "[]")); } catch { seenCelebrationsRef.current = new Set(); }
       setProfile(
         loaded
       );
@@ -18600,6 +18376,7 @@ export function SystemGame() {
       false
     );
 
+    authoritativeProfileRef.current = newProfile;
     setProfile(
       newProfile
     );
@@ -18718,13 +18495,22 @@ export function SystemGame() {
   }
 
   function applyAuthoritativeProfile(
-    updated
+    updated,
+    options = {}
   ) {
     const clean =
       normalizeProfile(
         updated
       );
 
+    if (options.announce !== false && authoritativeProfileRef.current) {
+      const events = achievementEvents(authoritativeProfileRef.current, clean);
+      const previouslySeen = new Set(seenCelebrationsRef.current);
+      setCelebrationQueue(queue => appendAchievements(queue, events, previouslySeen));
+      for (const event of events) seenCelebrationsRef.current.add(event.id);
+      try { localStorage.setItem(`systemCelebrations:${clean.fingerprint}`, JSON.stringify([...seenCelebrationsRef.current].slice(-150))); } catch { /* Presentation cache only. */ }
+    }
+    authoritativeProfileRef.current = clean;
     setProfile(
       clean
     );
@@ -18751,7 +18537,8 @@ export function SystemGame() {
         event?.detail
       ) {
         applyAuthoritativeProfile(
-          event.detail
+          event.detail,
+          { announce: false }
         );
       }
     }
@@ -19368,6 +19155,7 @@ export function SystemGame() {
       />
 
       <MusicEngine
+        onStatus={setMusicPlaybackStatus}
         enabled={
           musicEnabled &&
           initializationStage ===
@@ -19422,7 +19210,7 @@ export function SystemGame() {
       )}
 
       <div
-        data-system-build="2.9.7"
+        data-system-build="2.10.0"
         data-active-tab={tab}
         className={
           "dashboard-interface " +
@@ -19714,6 +19502,7 @@ export function SystemGame() {
           setTheme={
             setTheme
           }
+          musicPlaybackStatus={musicPlaybackStatus}
           musicEnabled={
             musicEnabled
           }
@@ -19764,10 +19553,15 @@ export function SystemGame() {
         }
       />
 
-      <EvolutionModal
+      <AchievementCelebration
+        event={celebrationQueue[0] || null}
+        onDismiss={() => setCelebrationQueue(queue => queue.slice(1))}
+        onSound={type => { if (sfxEnabled && sfxVolume > 0) playSFX(type, sfxVolume); }}
+      />
+      {!celebrationQueue.length && <EvolutionModal
         profile={profile}
         saveProfile={saveProfile}
-      />
+      />}
 
       <div
         id="system-modal-root"
