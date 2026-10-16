@@ -105,4 +105,34 @@ test("backend migration enforces review ownership, proof binding, idempotency an
   await assert.rejects(db.query("select public.system_accept_weekly_boss_v1($1)", [another]), /WEEKLY_COOLDOWN/);
   await db.exec(`select set_config('request.jwt.claim.sub','${other}',false);`);
   await assert.rejects(db.query("select public.system_complete_weekly_boss_v1($1,$2)", [boss.id, bossReceipt]), /WEEKLY_BOSS_NOT_FOUND/);
+
+  // Equipping is a reversible server loadout, never a repeatable stat award.
+  await db.exec(`select set_config('request.jwt.claim.sub','${uid}',false);`);
+  const earnedBefore = (await db.query("select * from public.attributes where user_id=$1", [uid])).rows[0];
+  const loadout = (await db.query("select public.system_sync_equipment_unlocks_v1() as value")).rows[0].value;
+  const runner = loadout.items.find(item => item.slug === "runners-edge");
+  assert.ok(runner);
+  const inventoryCount = (await db.query("select count(*)::int as n from public.user_inventory where user_id=$1", [uid])).rows[0].n;
+  await db.query("select public.system_sync_equipment_unlocks_v1()");
+  assert.equal((await db.query("select count(*)::int as n from public.user_inventory where user_id=$1", [uid])).rows[0].n, inventoryCount);
+  const equip = id => db.query("select public.system_set_inventory_state($1,true,null) as value", [id]);
+  const equipped = (await equip(runner.id)).rows[0].value;
+  assert.equal(equipped.equipment.bonuses.SPEED, 5);
+  assert.equal(equipped.equipment.effective_attributes.SPEED, earnedBefore.speed + 5);
+  assert.equal((await equip(runner.id)).rows[0].value.equipment.bonuses.SPEED, 5);
+  await db.query("insert into public.user_inventory(user_id,catalog_item_id,equipped) select $1,catalog_item_id,true from public.user_inventory where id=$2", [uid,runner.id]);
+  assert.equal((await db.query("select public.system_equipment_loadout_v1() as value")).rows[0].value.bonuses.SPEED, 5);
+  const removed = (await db.query("select public.system_set_inventory_state($1,false,null) as value", [runner.id])).rows[0].value;
+  assert.equal(removed.equipment.bonuses.SPEED, 0);
+  assert.equal(removed.equipment.effective_attributes.SPEED, earnedBefore.speed);
+  await db.query("select public.system_add_custom_inventory('FAKE POWER','GEAR','MYTHIC','+999 SPEED',null,null)");
+  const personal = (await db.query("select id from public.user_inventory where user_id=$1 and custom_name='FAKE POWER'", [uid])).rows[0];
+  assert.equal((await equip(personal.id)).rows[0].value.equipment.bonuses.SPEED, 0);
+  const locked = (await db.query("insert into public.user_inventory(user_id,catalog_item_id) select $1,id from public.item_catalog where slug='focus-crystal' returning id", [uid])).rows[0];
+  await assert.rejects(equip(locked.id), /ITEM_LEVEL_REQUIRED/);
+  await db.exec(`select set_config('request.jwt.claim.sub','${other}',false);`);
+  await assert.rejects(equip(runner.id), /INVENTORY_ITEM_NOT_FOUND/);
+  assert.deepEqual((await db.query("select * from public.attributes where user_id=$1", [uid])).rows[0], earnedBefore);
+  const equipmentPrivileges = (await db.query("select has_function_privilege('anon','public.system_equipment_loadout_v1()','execute') as anon")).rows[0];
+  assert.equal(equipmentPrivileges.anon, false);
 });

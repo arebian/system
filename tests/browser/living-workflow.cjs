@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '../..');
 const output = path.join(root, 'test-results');
 fs.mkdirSync(output, { recursive: true });
 const cloudExports = [...fs.readFileSync(path.join(root, 'src/systemCloud.js'), 'utf8').matchAll(/^export (?:async )?function (\w+)/gm)].map(m => m[1]);
-const cloud = cloudExports.map(name => `export async function ${name}(){${['bootstrapAuthoritativeProfile','hydrateStructuredProfile'].includes(name) ? 'return window.qaProfile;' : 'return {};'}}`).join('\n');
+const cloud = cloudExports.map(name => `export async function ${name}(args){${['bootstrapAuthoritativeProfile','hydrateStructuredProfile'].includes(name) ? 'return window.qaProfile;' : name === 'setInventoryStateOnBackend' ? 'window.qaSetEquipment(args);return {};' : 'return {};'}}`).join('\n');
 const api = `
 import {buildWeeklyPlan} from '/supabase/functions/_shared/weeklyBossCore.js';
 export async function reviewQuestOnBackend({proof}){
@@ -81,8 +81,27 @@ export async function livingSystemAction(action,p={}){
       await page.getByText('Boss defeated. Your preparation and rewards are recorded.').waitFor();
       assert.equal(await page.evaluate(() => window.qaCompletions), 1);
       assert.equal(await page.evaluate(() => window.qaAppliedProfile.bossQuests[0].status), 'COMPLETE');
+      await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=inventory');
+      await page.locator('.loot-card').first().click();
+      await page.getByRole('button', { name: 'EQUIP', exact: true }).click();
+      await page.getByRole('button', { name: 'UNEQUIP', exact: true }).waitFor();
+      await page.getByLabel('Active equipment bonuses').getByText('+5 SPEED', { exact: true }).waitFor();
+      assert.equal(await page.evaluate(() => window.qaAppliedProfile.attributes.SPEED), 12);
+      await page.getByRole('button', { name: 'UNEQUIP', exact: true }).click();
+      await page.getByRole('button', { name: 'EQUIP', exact: true }).waitFor();
+      assert.equal(await page.evaluate(() => window.qaAppliedProfile.equipment.bonuses.SPEED), 0);
+      await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=music');
+      await page.getByRole('button', { name: 'PLAY TEST MUSIC' }).click();
+      await page.getByText('PLAYING', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'ASSASSIN TRACK' }).click();
+      await page.getByText('PLAYING', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'PAUSE TEST MUSIC' }).click();
+      await page.getByText('PAUSED', { exact: true }).waitFor();
+      await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=appearance');
+      assert.ok(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.class-emblem-atmosphere')).opacity) >= 0.15));
+      await page.screenshot({ path: path.join(output, `assassin-light-${width}.png`), fullPage: true });
       assert.deepEqual(errors, []);
-      report.push({ width, rankReveal: 'passed', proofRecovery: 'passed', weeklyBoss: 'passed', errors });
+      report.push({ width, rankReveal: 'passed', proofRecovery: 'passed', weeklyBoss: 'passed', equipment: 'passed', audio: 'passed', assassinLight: 'passed', errors });
       await context.close();
     }
     fs.writeFileSync(path.join(output, 'living-browser-report.json'), JSON.stringify(report, null, 2));

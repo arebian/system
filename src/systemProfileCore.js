@@ -185,6 +185,8 @@ export function normalizeProfile(profile) {
       ...(profile?.attributes || {}),
     },
 
+    equipment: profile?.equipment && typeof profile.equipment === "object" ? profile.equipment : null,
+
     completed:
       Array.isArray(profile?.completed)
         ? profile.completed

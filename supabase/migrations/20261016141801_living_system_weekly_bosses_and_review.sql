@@ -302,4 +302,86 @@ end $$;
 revoke all on function public.system_complete_weekly_boss_v1(bigint,uuid) from public,anon;
 grant execute on function public.system_complete_weekly_boss_v1(bigint,uuid) to authenticated;
 
+-- Equipment bonuses are a reversible loadout, separate from earned attributes.
+update public.item_catalog set metadata=metadata||jsonb_build_object('equipment_bonuses',case slug
+  when 'runners-edge' then '{"SPEED":5}'::jsonb
+  when 'iron-key' then '{"STRENGTH":8}'::jsonb
+  when 'focus-crystal' then '{"FOCUS":10}'::jsonb
+  when 'vanguard-emblem' then '{"DISCIPLINE":10}'::jsonb
+  when 'ascendant-core' then '{"STRENGTH":15,"SPEED":15,"ENDURANCE":15,"INTELLIGENCE":15,"FOCUS":15,"DISCIPLINE":15,"WEALTH":15,"CHARISMA":15,"CREATIVITY":15,"RECOVERY":15}'::jsonb
+  end)
+where slug in ('runners-edge','iron-key','focus-crystal','vanguard-emblem','ascendant-core');
+
+create function public.system_equipment_loadout_v1() returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare
+  v_user uuid:=auth.uid(); v_level integer; v_base jsonb; v_bonus jsonb:='{}'; v_effective jsonb:='{}';
+  v_name text; v_value integer; v_items jsonb;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+  select level into v_level from public.profiles where id=v_user;
+  if not found then raise exception 'PROFILE_NOT_READY'; end if;
+  select to_jsonb(a)-'id'-'user_id'-'created_at'-'updated_at' into v_base from public.attributes a where user_id=v_user;
+  v_base:=coalesce(v_base,'{}');
+  for v_name in select unnest(array['STRENGTH','SPEED','ENDURANCE','INTELLIGENCE','FOCUS','DISCIPLINE','WEALTH','CHARISMA','CREATIVITY','RECOVERY']) loop
+    -- Duplicate copies never stack. Custom item descriptions are never parsed.
+    select coalesce(sum((c.metadata->'equipment_bonuses'->>v_name)::integer),0)::integer into v_value
+    from public.item_catalog c where c.active and c.required_level<=v_level
+      and c.metadata ? 'equipment_bonuses'
+      and exists(select 1 from public.user_inventory i where i.user_id=v_user and i.catalog_item_id=c.id and i.equipped);
+    v_bonus:=v_bonus||jsonb_build_object(v_name,v_value);
+    v_effective:=v_effective||jsonb_build_object(v_name,coalesce((v_base->>lower(v_name))::integer,0)+v_value);
+  end loop;
+  select coalesce(jsonb_agg(jsonb_build_object('id',i.id,'catalog_item_id',c.id,'slug',c.slug,'name',c.name,
+    'type',c.item_type,'rarity',c.rarity,'power',c.power,'level',c.required_level,'bonus',c.bonus_text,'icon',c.icon,
+    'bonuses',coalesce(c.metadata->'equipment_bonuses','{}'::jsonb),'equipped',i.equipped,'showcase',i.showcase) order by c.required_level,c.id),'[]'::jsonb)
+    into v_items from public.item_catalog c join lateral
+      (select * from public.user_inventory u where u.user_id=v_user and u.catalog_item_id=c.id order by u.equipped desc,u.id limit 1) i on true
+    where c.active and c.required_level<=v_level;
+  return jsonb_build_object('bonuses',v_bonus,'effective_attributes',v_effective,'items',v_items);
+end $$;
+revoke all on function public.system_equipment_loadout_v1() from public,anon;
+grant execute on function public.system_equipment_loadout_v1() to authenticated;
+
+create function public.system_sync_equipment_unlocks_v1() returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare v_user uuid:=auth.uid(); v_level integer;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+  select level into v_level from public.profiles where id=v_user for update;
+  if not found then raise exception 'PROFILE_NOT_READY'; end if;
+  insert into public.user_inventory(user_id,catalog_item_id,rarity,source_type,source_id,metadata)
+    select v_user,c.id,c.rarity,'SYSTEM_LEVEL',c.slug,jsonb_build_object('authoritative_stats',true)
+    from public.item_catalog c where c.active and c.required_level<=v_level and c.metadata ? 'equipment_bonuses'
+      and not exists(select 1 from public.user_inventory i where i.user_id=v_user and i.catalog_item_id=c.id);
+  return public.system_equipment_loadout_v1();
+end $$;
+revoke all on function public.system_sync_equipment_unlocks_v1() from public,anon;
+grant execute on function public.system_sync_equipment_unlocks_v1() to authenticated;
+
+create or replace function public.system_set_inventory_state(p_inventory_id bigint,p_equipped boolean default null,p_showcase boolean default null)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare v_user uuid:=auth.uid(); v_item public.user_inventory; v_catalog public.item_catalog; v_level integer;
+begin
+  if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
+  select level into v_level from public.profiles where id=v_user for update;
+  if not found then raise exception 'PROFILE_NOT_READY'; end if;
+  select * into v_item from public.user_inventory where id=p_inventory_id and user_id=v_user for update;
+  if not found then raise exception 'INVENTORY_ITEM_NOT_FOUND'; end if;
+  if p_equipped=true and v_item.catalog_item_id is not null then
+    select * into v_catalog from public.item_catalog where id=v_item.catalog_item_id;
+    if not v_catalog.active or v_catalog.required_level>v_level then raise exception 'ITEM_LEVEL_REQUIRED'; end if;
+  end if;
+  update public.user_inventory set equipped=coalesce(p_equipped,equipped),showcase=coalesce(p_showcase,showcase)
+    where id=v_item.id returning * into v_item;
+  -- Keep any legacy duplicate copies in the same state without granting a
+  -- second bonus or allowing an invisible equipped duplicate after unequip.
+  if v_item.catalog_item_id is not null and p_equipped is not null then
+    update public.user_inventory set equipped=p_equipped where user_id=v_user and catalog_item_id=v_item.catalog_item_id;
+  end if;
+  return jsonb_build_object('item',to_jsonb(v_item),'equipment',public.system_equipment_loadout_v1());
+end $$;
+revoke all on function public.system_set_inventory_state(bigint,boolean,boolean) from public,anon;
+grant execute on function public.system_set_inventory_state(bigint,boolean,boolean) to authenticated;
+
 commit;

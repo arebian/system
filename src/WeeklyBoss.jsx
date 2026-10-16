@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { canReuseApprovedReview } from "./systemReviewCore.js";
 import { livingSystemAction } from "./systemLivingApi.js";
 import { bootstrapAuthoritativeProfile, hydrateStructuredProfile } from "./systemCloud.js";
 import { normalizeProfile } from "./systemProfileCore.js";
@@ -112,10 +113,11 @@ export default function WeeklyBoss({ profile, applyAuthoritativeProfile }) {
       {boss && <form className="weekly-boss-proof" onSubmit={e => { e.preventDefault(); run("Reviewing your finished result", async () => {
         const proof = { type: "RESULT", detail: result.trim() + (answer.trim() ? `\nAdditional detail: ${answer.trim()}` : "") };
         const key = JSON.stringify(proof);
-        let assessment = approved.current?.key === key ? approved.current.review : await livingSystemAction("review_weekly_boss", { boss_id: boss.id, proof });
+        const reviewTarget = String(boss.id);
+        const assessment = canReuseApprovedReview(approved.current, key, reviewTarget) ? approved.current.review : await livingSystemAction("review_weekly_boss", { boss_id: boss.id, proof });
         setReview(assessment);
         if (assessment.decision !== "APPROVE") return;
-        approved.current = { key, review: assessment };
+        approved.current = { key, target: reviewTarget, review: assessment };
         const victory = await livingSystemAction("complete_weekly_boss", { boss_id: boss.id, review_id: assessment.id });
         // Refresh the character before dismissing the active boss, so a refresh failure is retryable.
         await refreshPlayer(); await refresh();

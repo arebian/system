@@ -253,6 +253,7 @@ export async function bootstrapAuthoritativeProfile() {
 
   const legacy = {
     ...base,
+    equipment: state?.equipment || null,
 
     name:
       row.name ??

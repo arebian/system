@@ -4,7 +4,7 @@
 
 **Project:** THE SYSTEM  
 **Tagline:** REAL LIFE / RPG  
-**Current active build:** 2.9.7 — AUTOMATIC LOGIN MOTION  
+**Current active build:** 2.10.0 — LIVING SYSTEM + EQUIPMENT
 **Emergency fallback baseline:** 2.1.1  
 **Frontend:** React + Vite + JSX  
 **Backend:** Supabase + PostgreSQL + RPC functions + Edge Functions  
@@ -51,7 +51,7 @@ The desired feeling is:
 
 The current master is:
 
-**THE SYSTEM 2.9.7 — AUTOMATIC LOGIN MOTION**
+**THE SYSTEM 2.10.0 — LIVING SYSTEM + EQUIPMENT**
 
 Do not reconstruct the app from memory.
 Do not use old prototypes.
@@ -137,6 +137,7 @@ Known version chain:
 - 2.9.5 — Launch stability: split heavy screens, clear login and six-step foundation scan, backend-confirmed onboarding, 31 bundled book texts, protected quest RPCs, private error codes and live AI planning context.
 - 2.9.6 — Login and foundation class-art rotation, multiple improvement goals with one main priority, required weight and feet/inches height input with canonical backend storage.
 - 2.9.7 — Automatic login rotation without a pause button, decoded artwork before switching and smoother fades for artwork, tint and captions.
+- 2.10.0 — Confirmed achievement reveals, meaning-based quest review, weekly preparation bosses, reversible server-calculated equipment bonuses, reliable soundtrack controls and visible Assassin light-mode artwork.
 
 Do not accidentally remove fixes introduced by later versions.
 

@@ -1,6 +1,6 @@
 # Achievement celebrations, understanding proof, and weekly preparation bosses
 
-This feature branch adds three connected changes to the current 2.9.7 source. It does not add payments, paid ranks, a shop, voice generation, or speculative new boss categories.
+Version 2.10.0 builds on the preserved 2.9.7 source. It does not add payments, paid ranks, a shop, voice generation, or speculative new boss categories.
 
 ## Player experience
 
@@ -19,13 +19,19 @@ The new migration adds owner-readable, service-written review receipts and plan 
 
 The `system-intelligence-responder` instructions recognize the saved weekly plan and can explain preparation or substitutions. It cannot change an accepted target or approve completion.
 
+## Equipment and audio
+
+The server grants the existing level-unlocked catalog items and computes active bonuses from owned, equipped catalog entries. Runner’s Edge gives +5 Speed, Iron Key +8 Strength, Focus Crystal +10 Focus, Vanguard Emblem +10 Discipline, and Ascendant Core +15 to each attribute, using the existing required levels. Duplicate copies never stack. The Attributes screen and character power show the effective totals and the gear contribution; earned attributes, XP, quest credit and mastery requirements remain based on real verified actions. Unequipping removes only the loadout bonus. Player-written gear descriptions and boss trophy text cannot mint attributes.
+
+Soundtrack playback now reports playing, paused, blocked and failed states; remembered audio preferences can resume when the browser permits. A deliberate retry handles blocked playback. SFX clicks never start music. Track changes stop the previous class track; switching tabs pauses and resumes the same position. A saved volume of zero stays muted. Assassin light mode uses the existing crimson artwork with a visible, restrained opacity.
+
 ## Current recipe limits
 
 The first breakfast recipe uses an oats base and the lunch recipe uses rice, cooked beans and vegetables. This version does **not** infer allergy substitutions: nonempty dietary restrictions block these recipes instead of silently ignoring them. New reviewed recipes are needed to serve those players. Breakfast also offers a ready-to-eat dry pantry option. Fridge-only storage is not presented as sufficient for a whole week of wet meals. Later portions use the freezer; the plan links [USDA leftover guidance](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/leftovers-and-food-safety). Counts are scaled, but calories, macros and local prices are not invented. A spending limit is recorded and shown for checking against existing supplies; this is not a price-checked shopping service. Active effort estimates exclude drying/chilling time.
 
 ## Review and deployment
 
-The changes are prepared for review, not deployed to the live app. The backend migration, function dispatcher and frontend form a coordinated release. Old frontend clients cannot satisfy the new textual-proof receipt guard, so refresh/version handling must be part of rollout.
+The release is prepared for the user-approved production rollout. The backend migration, function dispatcher and frontend form a coordinated release. Old frontend clients cannot satisfy the new textual-proof receipt guard, so refresh/version handling must be part of rollout.
 
 1. Review the feature branch and run `npm ci`, `npm test` and `npm run build`.
 2. On a fresh disposable local Supabase project, `supabase start` applies the baseline and new migration. Serve functions locally using the existing documented workflow and configure a provider key only in an ignored backend env file.
@@ -42,3 +48,9 @@ Browser checks use the real components with mocked transport at 390px and 1440px
 - [Database function privileges](https://supabase.com/docs/guides/database/functions)
 - [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
 - [Food handling and storage](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/leftovers-and-food-safety)
+
+## Release verification — 2026-10-16
+
+99 automated tests passed, including full disposable SQL replay, receipt binding and equipment ownership/level/duplicate/unequip checks. Browser flows passed at 390px and 1440px for achievement reveals, proof recovery, weekly bosses, real MP3 playback and switching, equipping/unequipping and Assassin light mode. Production builds passed. The production schema was compared against the recovered baseline: 54 table definitions, 80 function bodies/signatures, 96 public policies and 286 constraints matched. Production’s additional service-role default function grants were reviewed separately. An application-state and schema rollback copy was saved before release.
+
+The original production migration ledger must be retained; apply only the reviewed delta through the connected migration tool. The fresh-database baseline must never run on production. A full local Docker stack and a real owner Google OAuth round trip are distinct from the automated checks.

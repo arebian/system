@@ -3,6 +3,19 @@ import assert from "node:assert/strict";
 import { achievementEvents, appendAchievements } from "../src/systemAchievementCore.js";
 import { buildWeeklyPlan } from "../supabase/functions/_shared/weeklyBossCore.js";
 import { normalizeReviewProof, guardReviewDecision, responseText } from "../supabase/functions/_shared/questReviewCore.js";
+import { canReuseApprovedReview } from "../src/systemReviewCore.js";
+
+test("proof recovery reuses only fresh approvals for the same target and evidence", () => {
+  const now = Date.parse("2026-10-16T15:00:00Z");
+  const cached = { key: "evidence", target: "boss-1", review: { id: "receipt-1", decision: "APPROVE", expires_at: "2026-10-16T15:30:00Z" } };
+  assert.equal(canReuseApprovedReview(cached, "evidence", "boss-1", now), true);
+  assert.equal(canReuseApprovedReview(cached, "changed", "boss-1", now), false);
+  assert.equal(canReuseApprovedReview(cached, "evidence", "boss-2", now), false);
+  assert.equal(canReuseApprovedReview(cached, "evidence", "boss-1", now + 1800000), false);
+  assert.equal(canReuseApprovedReview(cached, "evidence", "boss-1", now + 1796000), false);
+  assert.equal(canReuseApprovedReview({ ...cached, review: { ...cached.review, expires_at: undefined } }, "evidence", "boss-1", now), false);
+  assert.equal(canReuseApprovedReview({ ...cached, review: { ...cached.review, decision: "CLARIFY" } }, "evidence", "boss-1", now), false);
+});
 
 const player = (level = 4, more = {}) => ({ fingerprint: "hunter-test", level, attributes: { DISCIPLINE: 10, RECOVERY: 10 }, bossQuests: [], ...more });
 test("initial hydration and a different player do not create achievements", () => {

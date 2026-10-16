@@ -1,6 +1,6 @@
 # THE SYSTEM
 
-Real life / RPG. Current app version: **2.9.7**.
+Real life / RPG. Current app version: **2.10.0**.
 
 ## Start development
 
@@ -27,7 +27,7 @@ npm run build
 ```
 
 - [Project rules](AGENTS.md) — shared by Codex and Claude Code.
-- [Current release notes](START_HERE_2_9_7.md).
+- [Current release notes](START_HERE_2_10_0.md).
 - [API setup](API_SETUP.md).
 - [Architecture](docs/ARCHITECTURE.md).
 - [Achievement celebrations, quest review and weekly preparation bosses](docs/LIVING_SYSTEM.md).
