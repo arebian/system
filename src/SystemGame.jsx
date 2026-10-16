@@ -6847,6 +6847,7 @@ export function QuestProofModal({
   ] = useState("");
 
   const [review, setReview] = useState(null);
+  const [verificationMode, setVerificationMode] = useState("SELF_REPORTED");
   const [followUp, setFollowUp] = useState("");
   const submitLock = useRef(false);
   const approvedProof = useRef(null);
@@ -6988,8 +6989,7 @@ export function QuestProofModal({
     }
 
     if (
-      proofType ===
-        "HONOR" &&
+      (proofType === "HONOR" || verificationMode === "SELF_REPORTED") &&
       !honorConfirmed
     ) {
       setError(
@@ -7054,14 +7054,14 @@ export function QuestProofModal({
       const canonical = normalizeReviewProof({ ...proof, honorConfirmed,
         detail: proof.detail + (followUp.trim() ? `\nAdditional detail: ${followUp.trim()}` : "") });
       const evidenceKey = JSON.stringify(canonical);
-      const reviewTarget = `${assignedFor}:${quest.name}`;
+      const reviewTarget = `${assignedFor}:${quest.name}:${verificationMode}`;
       const assessment = canReuseApprovedReview(approvedProof.current, evidenceKey, reviewTarget)
         ? approvedProof.current.review
-        : await reviewQuestOnBackend({ title: quest.name, assignedFor, proof: canonical });
+        : await reviewQuestOnBackend({ title: quest.name, assignedFor, proof: canonical, verificationMode });
       setReview(assessment);
       if (assessment.decision !== "APPROVE") return;
       approvedProof.current = { key: evidenceKey, target: reviewTarget, review: assessment };
-      await verified({ ...proof, ...canonical, reviewId: assessment.id, reviewMessage: assessment.reason });
+      await verified({ ...proof, ...canonical, reviewId: assessment.id, reviewMessage: assessment.reason, verificationMode });
     } catch (submitError) {
       const rawMessage =
         String(
@@ -7295,8 +7295,14 @@ export function QuestProofModal({
           </>
         )}
 
-        {proofType ===
-          "HONOR" && (
+        <SystemField label="COMPLETION METHOD">
+          <select value={verificationMode} disabled={busy} onChange={event => { setVerificationMode(event.target.value); setReview(null); setError(""); approvedProof.current = null; }}>
+            <option value="SELF_REPORTED">Self-reported · Free</option>
+            <option value="AI">AI review · Optional</option>
+          </select>
+        </SystemField>
+
+        {(proofType === "HONOR" || verificationMode === "SELF_REPORTED") && (
           <label className="proof-honor-confirmation">
             <input
               type="checkbox"
@@ -7313,9 +7319,11 @@ export function QuestProofModal({
           </label>
         )}
 
-        <p className="proof-understanding-note">Explain naturally. THE SYSTEM reviews the meaning of your result; spelling does not need to be perfect.</p>
+        <p className="proof-understanding-note">{verificationMode === "SELF_REPORTED"
+          ? "Free completion records your own confirmation and required evidence. It is labelled self-reported; AI does not assess your result."
+          : "Explain naturally. AI reviews the meaning of your result; spelling does not need to be perfect. If AI is unavailable, choose self-reported completion."}</p>
         {review && <div className="proof-review-result" role="status">
-          <strong>{review.decision === "APPROVE" ? "PROOF ACCEPTED" : "SYSTEM REVIEW"}</strong>
+          <strong>{review.decision === "APPROVE" ? (verificationMode === "SELF_REPORTED" ? "SELF-REPORTED COMPLETION" : "PROOF ACCEPTED") : "MORE DETAIL NEEDED"}</strong>
           <p>{review.reason}</p>{review.question && <p>{review.question}</p>}
         </div>}
         {review && review.decision !== "APPROVE" && <SystemField label="ANSWER THE SYSTEM">
@@ -7349,8 +7357,8 @@ export function QuestProofModal({
             }
           >
             {busy
-              ? "VERIFYING..."
-              : "SUBMIT PROOF"}
+              ? "RECORDING..."
+              : verificationMode === "SELF_REPORTED" ? "COMPLETE QUEST · SELF-REPORTED" : "SUBMIT PROOF"}
           </button>
         </div>
       </div>

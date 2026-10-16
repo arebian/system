@@ -32,6 +32,22 @@ export const REVIEW_SCHEMA = {
   }, required: ["decision", "reason", "question", "missing"],
 };
 
+// This records a player's attestation, never an AI assessment of the result.
+// The objective and required evidence format still come from the server.
+export function selfReportedQuestDecision(snapshot, proof) {
+  const allowed = ["HONOR", "PERFORMANCE", "RESULT", "LEARNING", "PHOTO", "VIDEO"];
+  if (snapshot.kind !== "QUEST" || !allowed.includes(snapshot.proof_policy)) throw new Error("SELF_REPORT_NOT_AVAILABLE");
+  if (proof.type !== snapshot.proof_policy) throw new Error("REVIEW_PROOF_TYPE_MISMATCH");
+  const clarify = (question, missing) => ({ decision: "CLARIFY", reason: "Your self-report needs the quest's required evidence.", question, missing });
+  if (!proof.honorConfirmed) return clarify("Confirm that you completed every requirement of the objective.", ["confirmation"]);
+  if (snapshot.proof_policy !== "HONOR" && !proof.detail && !proof.note) return clarify("Describe the result you completed.", ["result"]);
+  if (["PHOTO", "VIDEO"].includes(snapshot.proof_policy) && !proof.imagePath) return clarify("Attach the original evidence required by this quest.", ["attachment"]);
+  if (snapshot.proof_policy === "LEARNING" && new Set(proof.takeaways.map(t => t.trim().toLowerCase())).size < Number(snapshot.recall_required || 3)) {
+    return clarify("Add three distinct takeaways from what you learned.", ["takeaways"]);
+  }
+  return { decision: "APPROVE", reason: "Completion recorded as self-reported. No AI or independent verification was performed.", question: "", missing: [] };
+}
+
 export function guardReviewDecision(result, snapshot, proof) {
   if (!result || !["APPROVE", "CLARIFY", "INCOMPLETE"].includes(result.decision) || typeof result.reason !== "string" || !result.reason.trim()) {
     throw new Error("REVIEW_RESPONSE_INVALID");

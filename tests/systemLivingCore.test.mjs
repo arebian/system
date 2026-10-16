@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { achievementEvents, appendAchievements } from "../src/systemAchievementCore.js";
 import { buildWeeklyPlan } from "../supabase/functions/_shared/weeklyBossCore.js";
-import { normalizeReviewProof, guardReviewDecision, responseText } from "../supabase/functions/_shared/questReviewCore.js";
+import { normalizeReviewProof, guardReviewDecision, responseText, selfReportedQuestDecision } from "../supabase/functions/_shared/questReviewCore.js";
 import { canReuseApprovedReview } from "../src/systemReviewCore.js";
 
 test("proof recovery reuses only fresh approvals for the same target and evidence", () => {
@@ -18,6 +18,16 @@ test("proof recovery reuses only fresh approvals for the same target and evidenc
 });
 
 const player = (level = 4, more = {}) => ({ fingerprint: "hunter-test", level, attributes: { DISCIPLINE: 10, RECOVERY: 10 }, bossQuests: [], ...more });
+test("free learning completion preserves distinct takeaway and attachment requirements", () => {
+  const learning = { kind: "QUEST", proof_policy: "LEARNING", recall_required: 3 };
+  const proof = normalizeReviewProof({ type: "LEARNING", honorConfirmed: true, detail: "Finished chapter 3", takeaways: ["One", "one", "Two"] });
+  assert.equal(selfReportedQuestDecision(learning, proof).decision, "CLARIFY");
+  proof.takeaways.push("Three");
+  assert.equal(selfReportedQuestDecision(learning, proof).decision, "APPROVE");
+  const photo = { kind: "QUEST", proof_policy: "PHOTO" };
+  assert.equal(selfReportedQuestDecision(photo, { ...proof, type: "PHOTO", imagePath: "" }).decision, "CLARIFY");
+  assert.throws(() => selfReportedQuestDecision({ ...photo, kind: "WEEKLY_PREPARATION" }, proof), /SELF_REPORT_NOT_AVAILABLE/);
+});
 test("initial hydration and a different player do not create achievements", () => {
   assert.deepEqual(achievementEvents(null, player(50)), []);
   assert.deepEqual(achievementEvents(player(4), player(5, { fingerprint: "someone-else" })), []);

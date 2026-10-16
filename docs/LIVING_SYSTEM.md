@@ -54,3 +54,9 @@ Browser checks use the real components with mocked transport at 390px and 1440px
 99 automated tests passed, including full disposable SQL replay, receipt binding and equipment ownership/level/duplicate/unequip checks. Browser flows passed at 390px and 1440px for achievement reveals, proof recovery, weekly bosses, real MP3 playback and switching, equipping/unequipping and Assassin light mode. Production builds passed. The production schema was compared against the recovered baseline: 54 table definitions, 80 function bodies/signatures, 96 public policies and 286 constraints matched. Production’s additional service-role default function grants were reviewed separately. An application-state and schema rollback copy was saved before release.
 
 The original production migration ledger must be retained; apply only the reviewed delta through the connected migration tool. The fresh-database baseline must never run on production. A full local Docker stack and a real owner Google OAuth round trip are distinct from the automated checks.
+# Free self-reported quest completion
+
+Ordinary quest proof windows default to **Self-reported · Free**. The player supplies the quest's required evidence and explicitly confirms completion. The backend loads the real objective, checks eligibility and evidence format, and issues a normal owner-bound, expiring, single-use receipt with `model: SELF_REPORTED` and `snapshot.verification_mode: SELF_REPORTED`. This path never calls an AI provider and does not claim independent verification.
+
+Learning quests still require three distinct takeaways. Photo/video quests still require their original owned attachment. Timer/GPS requirements and weekly preparation boss review cannot be replaced by self-report. Existing reward, XP, daily-credit, expiry and duplicate-completion rules remain in the database transaction. Optional AI review stays available when the provider account has quota.
+

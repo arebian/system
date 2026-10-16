@@ -9,7 +9,9 @@ const cloudExports = [...fs.readFileSync(path.join(root, 'src/systemCloud.js'), 
 const cloud = cloudExports.map(name => `export async function ${name}(args){${['bootstrapAuthoritativeProfile','hydrateStructuredProfile'].includes(name) ? 'return window.qaProfile;' : name === 'setInventoryStateOnBackend' ? 'window.qaSetEquipment(args);return {};' : 'return {};'}}`).join('\n');
 const api = `
 import {buildWeeklyPlan} from '/supabase/functions/_shared/weeklyBossCore.js';
-export async function reviewQuestOnBackend({proof}){
+export async function reviewQuestOnBackend({proof,verificationMode}){
+ window.qaVerificationMode=verificationMode;
+ if(verificationMode==='SELF_REPORTED')return {id:'self-review',decision:'APPROVE',reason:'Completion recorded as self-reported. No AI verification was performed.'};
  if(window.qaOffline)throw new Error('Connection interrupted. Please retry.');
  window.qaLastEvidence=proof;
  return proof.detail.includes('25')?{id:'review-1',decision:'APPROVE',reason:'You exceeded the reading target.',question:''}:{decision:'INCOMPLETE',reason:'Ten minutes remain.',question:'How many minutes did you read in total?'};
@@ -52,6 +54,18 @@ export async function livingSystemAction(action,p={}){
       await page.screenshot({ path: path.join(output, `rank-celebration-${width}.png`) });
       await page.keyboard.press('Escape'); await page.getByText('QA flow complete').waitFor();
       await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=proof');
+      assert.equal(await page.getByLabel('COMPLETION METHOD').inputValue(), 'SELF_REPORTED');
+      await page.getByLabel('RESULT NOTE — OUTCOME').fill('Completed the required reps.');
+      await page.getByRole('button', { name: 'COMPLETE QUEST · SELF-REPORTED', exact: true }).click();
+      await page.getByText('CONFIRM THAT THE OBJECTIVE IS COMPLETE BEFORE SUBMITTING.').waitFor();
+      assert.equal(await page.evaluate(() => window.qaCompletions), 0);
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'COMPLETE QUEST · SELF-REPORTED', exact: true }).dblclick();
+      await page.getByText('QA flow complete').waitFor();
+      assert.equal(await page.evaluate(() => window.qaSubmittedProof.verificationMode), 'SELF_REPORTED');
+      assert.equal(await page.evaluate(() => window.qaCompletions), 1);
+      await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=proof');
+      await page.getByLabel('COMPLETION METHOD').selectOption('AI');
       await page.getByLabel('RESULT NOTE — OUTCOME').fill('red 10 mins');
       await page.getByRole('button', { name: 'SUBMIT PROOF', exact: true }).click();
       await page.getByText('Ten minutes remain.').waitFor();

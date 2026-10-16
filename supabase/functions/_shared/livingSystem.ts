@@ -1,4 +1,4 @@
-import { normalizeReviewProof, REVIEW_INSTRUCTIONS, REVIEW_SCHEMA, guardReviewDecision, responseText } from "./questReviewCore.js";
+import { normalizeReviewProof, REVIEW_INSTRUCTIONS, REVIEW_SCHEMA, guardReviewDecision, responseText, selfReportedQuestDecision } from "./questReviewCore.js";
 import { buildWeeklyPlan } from "./weeklyBossCore.js";
 
 export const LIVING_ACTIONS = new Set(["review_quest", "weekly_boss_status", "prepare_weekly_boss", "accept_weekly_boss", "review_weekly_boss", "complete_weekly_boss", "weekly_boss_checkpoint", "retire_weekly_boss"]);
@@ -18,7 +18,7 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
 }
 
 async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher }: any) {
-  if (!apiKey) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+  if (!apiKey?.trim()) throw new PublicFailure("REVIEW_KEY_MISSING", 503);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 24000);
   try {
@@ -31,11 +31,34 @@ async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetc
         instructions: REVIEW_INSTRUCTIONS, input: [{ role: "user", content }],
         text: { format: { type: "json_schema", name: "quest_review", strict: true, schema: REVIEW_SCHEMA } } }),
     });
-    if (!response.ok) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    if (!response.ok) {
+      // Never log provider messages: they can contain credentials or player text.
+      let upstream: any = {};
+      try { upstream = await response.json(); } catch { /* Non-JSON outage. */ }
+      const code = String(upstream?.error?.code || "");
+      const type = String(upstream?.error?.type || "");
+      // Some providers omit error.code or reuse rate_limit_exceeded for billing.
+      // Inspect text in memory, but emit only allowlisted categories.
+      const quota = /insufficient_quota|billing[_ -](?:hard[_ -]limit|not[_ -]active)|exceed.{0,40}(?:current|billing|monthly) quota|run out of credits|no balance left|credit balance|monthly (?:spend|usage) limit/i
+        .test([code, type, String(upstream?.error?.message || "").slice(0, 2000)].join(" "));
+      const failure = response.status === 401 ? "REVIEW_AUTH_FAILED"
+        : quota ? "REVIEW_QUOTA_EXHAUSTED"
+        : code === "model_not_found" ? "REVIEW_MODEL_UNAVAILABLE"
+        : response.status === 403 ? "REVIEW_ACCESS_DENIED"
+        : response.status === 429 ? "REVIEW_PROVIDER_RATE_LIMITED"
+        : response.status === 400 ? "REVIEW_REQUEST_REJECTED"
+        : "REVIEW_UNAVAILABLE";
+      const knownCodes = ["insufficient_quota", "rate_limit_exceeded", "invalid_api_key", "model_not_found", "billing_hard_limit_reached"];
+      const knownTypes = ["insufficient_quota", "rate_limit_error", "tokens", "requests", "invalid_request_error"];
+      console.error("QUEST_REVIEW_PROVIDER_FAILURE", JSON.stringify({ status: response.status, failure,
+        code: knownCodes.includes(code) ? code : "other", type: knownTypes.includes(type) ? type : "other" }));
+      throw new PublicFailure(failure, 503);
+    }
     const parsed = JSON.parse(responseText(await response.json()));
     return guardReviewDecision(parsed, snapshot, proof);
   } catch (error) {
     if (error instanceof PublicFailure) throw error;
+    if (error instanceof Error && error.name === "AbortError") throw new PublicFailure("REVIEW_TIMEOUT", 503);
     throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
   } finally { clearTimeout(timeout); }
 }
@@ -46,6 +69,9 @@ export async function handleLivingSystemAction({ action, payload, userId, client
   try {
     if (!userId) throw new PublicFailure("AUTH_REQUIRED", 401);
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new PublicFailure("INVALID_PAYLOAD");
+    const mode = String(payload.verification_mode || "AI").toUpperCase();
+    if (!["AI", "SELF_REPORTED"].includes(mode)) throw new PublicFailure("INVALID_VERIFICATION_MODE");
+    if (mode === "SELF_REPORTED" && action !== "review_quest") throw new PublicFailure("SELF_REPORT_NOT_AVAILABLE");
     if (action === "weekly_boss_status") return { status: 200, body: { data: await rpc(client, "system_weekly_boss_status_v1") } };
     if (action === "accept_weekly_boss") return { status: 200, body: { data: await rpc(client, "system_accept_weekly_boss_v1", { p_plan_id: payload.plan_id }) } };
     if (action === "complete_weekly_boss") return { status: 200, body: { data: await rpc(client, "system_complete_weekly_boss_v1", { p_boss_id: payload.boss_id, p_review_id: payload.review_id }) } };
@@ -94,10 +120,16 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       if (/\.(png|jpe?g|webp)$/i.test(proof.imagePath)) imageUrl = data.signedUrl;
     }
     if (snapshot.proof_policy === "PHOTO" && !imageUrl) throw new PublicFailure("REVIEW_IMAGE_FORMAT_UNSUPPORTED");
-    const review = await reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher });
+    let review;
+    if (mode === "SELF_REPORTED") {
+      try { review = selfReportedQuestDecision(snapshot, proof); }
+      catch (error) { throw new PublicFailure(error instanceof Error ? error.message : "SELF_REPORT_NOT_AVAILABLE"); }
+      if (review.decision !== "APPROVE") return { status: 200, body: { data: review } };
+      snapshot = { ...snapshot, verification_mode: "SELF_REPORTED" };
+    } else review = await reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher });
     const { data, error } = await admin.from("system_quest_reviews").insert({
       user_id: userId, target_type: action === "review_quest" ? "QUEST" : "BOSS", target_id: snapshot.target_id,
-      assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model,
+      assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model: mode === "SELF_REPORTED" ? "SELF_REPORTED" : model,
     }).select("id,decision,reason,question,missing,expires_at").single();
     if (error) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
     return { status: 200, body: { data } };
