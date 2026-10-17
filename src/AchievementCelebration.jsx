@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { SystemModalPortal } from "./systemUI.jsx";
 import "./styles/achievements.css";
 
-export default function AchievementCelebration({ event, onDismiss, onSound }) {
+export default function AchievementCelebration({ event, onDismiss, onSound, path = "COMMANDER" }) {
   const dialog = useRef(null);
   const played = useRef(new Set());
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function AchievementCelebration({ event, onDismiss, onSound }) {
   if (!event) return null;
   const major = event.kind !== "LEVEL";
   return <SystemModalPortal>
-    <div className={`achievement-overlay ${major ? "achievement-major" : ""}`}>
+    <div className={`achievement-overlay achievement-path-${String(path || "COMMANDER").toLowerCase()} ${major ? "achievement-major" : ""}`} data-player-class={String(path || "COMMANDER").toUpperCase()}>
       <section ref={dialog} className="achievement-dialog" role="dialog" aria-modal="true" aria-labelledby="achievement-heading"
         onKeyDown={e => {
           if (e.key === "Escape") { e.stopPropagation(); onDismiss(); }
