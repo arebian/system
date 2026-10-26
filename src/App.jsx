@@ -106,6 +106,9 @@ export function SystemAppRuntime() {
   const [gameReady,setGameReady]=useState(false);
   const [bootMessage,setBootMessage]=useState("CONNECTING TO SYSTEM CLOUD...");
   const activeUserIdRef=useRef(null);
+  // Prevent a slower getSession() boot request from overwriting a newer
+  // OAuth callback/session event with a stale null session.
+  const authEventSeenRef=useRef(false);
 
   useEffect(()=>{
     let active=true;
@@ -122,6 +125,11 @@ export function SystemAppRuntime() {
         );
 
         if(!active)return;
+
+        // OAuth can complete while getSession() is still resolving. If the
+        // auth listener has already delivered a session event, trust that
+        // newer state instead of replacing it with this boot snapshot.
+        if(authEventSeenRef.current)return;
 
         if(error){
           console.error(
@@ -160,6 +168,7 @@ export function SystemAppRuntime() {
       supabase.auth.onAuthStateChange(
         (event,session)=>{
           if(!active)return;
+          authEventSeenRef.current=true;
 
           const nextUser=
             session?.user||null;
