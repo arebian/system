@@ -14,9 +14,21 @@ const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
   DEFAULT_SUPABASE_URL;
 
-const supabasePublishableKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+const configuredPublishableKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+// Ignore template placeholders accidentally left in .env.local. Supabase
+// accepts these values as headers but rejects them as invalid API keys,
+// which can make OAuth appear to succeed before the app loops back to login.
+const isPlaceholderKey =
+  !configuredPublishableKey ||
+  /replace[-_ ]?with|your[-_ ]|placeholder/i.test(
+    configuredPublishableKey
+  );
+
+const supabasePublishableKey = isPlaceholderKey
+  ? DEFAULT_SUPABASE_PUBLISHABLE_KEY
+  : configuredPublishableKey;
 
 export const supabase = createClient(
   supabaseUrl,
