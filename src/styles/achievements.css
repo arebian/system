@@ -1,17 +1,25 @@
-.achievement-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:20px;background:rgba(3,5,12,.87);overflow-y:auto;color:#eef4ff}
-.achievement-dialog{width:min(100%,460px);margin:auto;text-align:center;background:linear-gradient(155deg,#172032,#090e19 65%);border:1px solid #637eac;border-radius:12px;padding:32px 28px;box-shadow:0 0 65px #30538945;animation:achievement-enter .35s ease-out}
-.achievement-dialog>small{display:block;color:#aebfd8;font:11px 'Share Tech Mono',monospace;letter-spacing:1.5px;line-height:1.7}
-.achievement-dialog h2{font:600 17px 'Rajdhani',sans-serif;letter-spacing:4px;color:#b8cae5;margin:10px 0}
-.achievement-name{display:block;font:700 clamp(34px,7vw,58px) 'Rajdhani',sans-serif;line-height:1.1;color:#fff;overflow-wrap:anywhere}
-.achievement-dialog>p{font-size:15px;line-height:1.6;color:#c4d0e4;margin:18px 0}
-.achievement-dialog .achievement-level{font:14px 'Share Tech Mono',monospace;color:#e7ca86;margin:12px 0}
-.achievement-emblem{width:130px;margin:18px auto}.achievement-emblem svg{fill:none;stroke:#8fbaff;stroke-width:2;filter:drop-shadow(0 0 10px #74a8ff77)}
-.achievement-emblem path:last-child{stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
-.achievement-major .achievement-dialog{border-color:#af8c44;background:linear-gradient(155deg,#2a2317,#0d0e17 65%);box-shadow:0 0 80px #b5903430}
-.achievement-major .achievement-emblem{width:155px}.achievement-major .achievement-emblem svg{stroke:#f1c979;filter:drop-shadow(0 0 14px #f1c97955)}
-.achievement-gains{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px}.achievement-gains li{display:flex;justify-content:space-between;padding:10px 12px;background:#ffffff08;border:1px solid #ffffff15;font:12px 'Share Tech Mono',monospace}.achievement-gains b,.achievement-xp{color:#a4e7b8}
-.achievement-dialog>button{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;margin:24px 0 15px;padding:14px 18px;border:1px solid #97b3dc;background:#263b5b;color:#fff;font:600 16px 'Rajdhani',sans-serif;letter-spacing:2px;cursor:pointer}
-.achievement-dialog>button:focus-visible{outline:3px solid #f1c979;outline-offset:4px}.achievement-major .achievement-dialog>button{background:#49391f;border-color:#d4b16b}
-@keyframes achievement-enter{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
-@media(max-width:480px){.achievement-overlay{padding:12px}.achievement-dialog{padding:22px 18px}.achievement-emblem{width:100px;margin:12px auto}.achievement-major .achievement-emblem{width:120px}}
-@media(prefers-reduced-motion:reduce){.achievement-dialog{animation:none}.achievement-emblem svg{filter:none}}
+.achievement-overlay{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:clamp(12px,3vw,24px);background:rgba(3,5,9,.78);backdrop-filter:blur(12px);overflow-y:auto;color:var(--achievement-text,#f2f0f1);isolation:isolate}
+.achievement-dialog{--achievement-accent:#c43b50;--achievement-glow:rgba(196,59,80,.18);--achievement-panel:#100d12;--achievement-border:color-mix(in srgb,var(--achievement-accent) 52%,transparent);--achievement-text:#f2f0f1;--achievement-muted:#a9a1aa;position:relative;width:min(100%,440px);max-height:min(88dvh,760px);overflow-y:auto;margin:auto;text-align:center;padding:clamp(22px,5vw,34px);background:radial-gradient(ellipse at 50% 0%,var(--achievement-glow),transparent 55%),linear-gradient(155deg,color-mix(in srgb,var(--achievement-panel) 90%,var(--achievement-accent) 10%),var(--achievement-panel) 68%);border:1px solid var(--achievement-border);border-radius:var(--card-radius,12px);box-shadow:0 24px 80px #0009,0 0 42px var(--achievement-glow),inset 0 1px 0 #ffffff0b;animation:achievement-enter .32s cubic-bezier(.2,.8,.2,1);scrollbar-width:thin;scrollbar-color:var(--achievement-border) transparent}
+.achievement-dialog:before{content:"";position:absolute;inset:8px;pointer-events:none;border:1px solid color-mix(in srgb,var(--achievement-accent) 15%,transparent);border-radius:inherit}
+.achievement-dialog>small{position:relative;display:block;color:var(--achievement-muted);font:10px 'Share Tech Mono',monospace;letter-spacing:1.6px;line-height:1.7}
+.achievement-dialog h2{position:relative;font:600 14px 'Rajdhani',sans-serif;letter-spacing:4px;color:var(--achievement-accent);margin:8px 0 10px}
+.achievement-name{position:relative;display:block;font:700 clamp(32px,8vw,52px) 'Rajdhani',sans-serif;line-height:1.04;letter-spacing:1px;color:var(--achievement-text);overflow-wrap:anywhere;text-shadow:0 0 28px var(--achievement-glow)}
+.achievement-dialog>p{position:relative;font-size:14px;line-height:1.65;color:var(--achievement-muted);margin:14px 0}
+.achievement-dialog .achievement-level{font:12px 'Share Tech Mono',monospace;letter-spacing:1px;color:var(--achievement-accent);margin:12px 0}
+.achievement-emblem{position:relative;width:104px;margin:15px auto 12px}.achievement-emblem svg{display:block;width:100%;fill:none;stroke:var(--achievement-accent);stroke-width:1.5;filter:drop-shadow(0 0 10px var(--achievement-glow))}.achievement-emblem path:last-child{stroke-width:4;stroke-linecap:square;stroke-linejoin:miter}
+.achievement-xp{position:relative;display:inline-block;margin:5px auto;padding:9px 12px;border:1px solid color-mix(in srgb,var(--achievement-accent) 35%,transparent);background:color-mix(in srgb,var(--achievement-accent) 8%,transparent);color:var(--achievement-accent);font:11px 'Share Tech Mono',monospace;letter-spacing:1px}
+.achievement-gains{position:relative;list-style:none;padding:0;margin:16px 0;display:grid;gap:7px}.achievement-gains li{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;background:color-mix(in srgb,var(--achievement-accent) 5%,transparent);border:1px solid color-mix(in srgb,var(--achievement-accent) 18%,transparent);font:12px 'Share Tech Mono',monospace;color:var(--achievement-muted)}.achievement-gains b{color:var(--achievement-accent)}
+.achievement-dialog>button{position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;margin:22px 0 13px;padding:13px 16px;border:1px solid var(--achievement-accent);border-radius:var(--card-radius,8px);background:color-mix(in srgb,var(--achievement-accent) 12%,transparent);color:var(--achievement-text);font:600 14px 'Rajdhani',sans-serif;letter-spacing:2px;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.achievement-dialog>button:hover{background:color-mix(in srgb,var(--achievement-accent) 22%,transparent);transform:translateY(-1px)}.achievement-dialog>button:focus-visible{outline:2px solid var(--achievement-accent);outline-offset:4px}
+.achievement-major .achievement-dialog{--achievement-accent:var(--rank-accent,#d6a94e);--achievement-glow:rgba(214,169,78,.17)}
+/* The modal is portalled outside .app, so mirror the active class palette here. */
+:root:has(.app.class-assassin) .achievement-dialog{--achievement-accent:#ef4444;--achievement-panel:#100b0e;--card-radius:12px}
+:root:has(.app.class-tank) .achievement-dialog{--achievement-accent:#c18a52;--achievement-panel:#15100b;--card-radius:8px}
+:root:has(.app.class-mage) .achievement-dialog{--achievement-accent:#a855f7;--achievement-panel:#100b19;--card-radius:20px}
+:root:has(.app.class-ranger) .achievement-dialog{--achievement-accent:#22a765;--achievement-panel:#09140e;--card-radius:16px}
+:root:has(.app.class-commander) .achievement-dialog{--achievement-accent:#f59e0b;--achievement-panel:#171107;--card-radius:10px}
+:root:has(.app.light) .achievement-dialog{--achievement-panel:#f7f7f8;--achievement-text:#17202b;--achievement-muted:#606875;box-shadow:0 24px 70px #0002,0 0 34px var(--achievement-glow),inset 0 1px 0 #ffffff}
+:root:has(.app.light) .achievement-overlay{background:rgba(20,24,32,.42)}
+.achievement-major .achievement-emblem{width:122px}
+@keyframes achievement-enter{from{opacity:0;transform:translateY(12px) scale(.975)}to{opacity:1;transform:none}}
+@media(max-width:480px){.achievement-overlay{padding:10px}.achievement-dialog{max-height:90dvh;padding:22px 17px}.achievement-emblem{width:88px}.achievement-major .achievement-emblem{width:104px}.achievement-dialog>p{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.achievement-dialog{animation:none}.achievement-dialog>button{transition:none}.achievement-emblem svg{filter:none}}
