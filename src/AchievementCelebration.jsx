@@ -108,7 +108,7 @@ export default function AchievementCelebration({
         previousFocus.focus?.({ preventScroll: true });
       }
     };
-  }, [event?.id, onSound]);
+  }, [event?.id]);
 
   async function allocateCredit(credit, attribute) {
     const actionKey = credit.id + ":" + attribute;
