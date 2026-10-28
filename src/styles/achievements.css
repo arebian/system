@@ -17,7 +17,7 @@
   color:var(--achievement-text);
   background:
     radial-gradient(ellipse at 100% 0%,var(--achievement-glow),transparent 48%),
-    linear-gradient(145deg,color-mix(in srgb,var(--panel-bg,#101116) 94%,var(--achievement-accent) 6%),var(--panel-bg,#101116));
+    linear-gradient(145deg,color-mix(in srgb,var(--achievement-panel,#101116) 94%,var(--achievement-accent) 6%),var(--achievement-panel,#101116));
   border:1px solid var(--achievement-border);
   border-radius:var(--card-radius,12px);
   box-shadow:0 24px 70px #0005,0 0 28px var(--achievement-glow),inset 0 1px 0 #ffffff0a;
@@ -80,12 +80,12 @@
   position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;
   margin:18px 0 10px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--achievement-accent) 60%,transparent);
   border-radius:var(--card-radius,8px);
-  background:color-mix(in srgb,var(--achievement-accent) 12%,var(--panel-bg,#101116));
+  background:color-mix(in srgb,var(--achievement-accent) 12%,var(--achievement-panel,#101116));
   color:var(--achievement-text);font:600 12px 'Rajdhani',sans-serif;letter-spacing:1.8px;
   cursor:pointer;transition:background .18s,border-color .18s,transform .18s
 }
 .achievement-dialog>button:hover{
-  background:color-mix(in srgb,var(--achievement-accent) 20%,var(--panel-bg,#101116));transform:translateY(-1px)
+  background:color-mix(in srgb,var(--achievement-accent) 20%,var(--achievement-panel,#101116));transform:translateY(-1px)
 }
 .achievement-dialog>button:focus-visible{outline:2px solid var(--achievement-accent);outline-offset:3px}
 .achievement-dialog>small:last-child{font-size:8px;letter-spacing:1.3px;opacity:.72}
