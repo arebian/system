@@ -90,11 +90,11 @@
 .achievement-dialog>button:focus-visible{outline:2px solid var(--achievement-accent);outline-offset:3px}
 .achievement-dialog>small:last-child{font-size:8px;letter-spacing:1.3px;opacity:.72}
 .achievement-major .achievement-dialog{--achievement-accent:var(--rank-accent,var(--accent,#d6a94e))}
-:root:has(.app.class-assassin) .achievement-overlay{--achievement-accent:#ef4444}
-:root:has(.app.class-tank) .achievement-overlay{--achievement-accent:#c18a52}
-:root:has(.app.class-mage) .achievement-overlay{--achievement-accent:#a855f7}
-:root:has(.app.class-ranger) .achievement-overlay{--achievement-accent:#22a765}
-:root:has(.app.class-commander) .achievement-overlay{--achievement-accent:#f59e0b}
+:root:has(.app.class-assassin) .achievement-dialog{--achievement-accent:#ef4444;--card-radius:12px}
+:root:has(.app.class-tank) .achievement-dialog{--achievement-accent:#c18a52;--card-radius:8px}
+:root:has(.app.class-mage) .achievement-dialog{--achievement-accent:#a855f7;--card-radius:20px}
+:root:has(.app.class-ranger) .achievement-dialog{--achievement-accent:#22a765;--card-radius:16px}
+:root:has(.app.class-commander) .achievement-dialog{--achievement-accent:#f59e0b;--card-radius:10px}
 :root:has(.app.light) .achievement-overlay{--achievement-text:#17202b;--achievement-muted:#606875}
 :root:has(.app.light) .achievement-dialog{
   --achievement-panel:var(--panel-bg,#f7f7f8);
