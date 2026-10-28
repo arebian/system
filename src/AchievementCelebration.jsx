@@ -7,7 +7,7 @@ import {
   loadAttributeCredits,
 } from "./systemCloud.js";
 import { normalizeProfile } from "./systemProfileCore.js";
-import { getAttributeTier, normalizeAttributeCredit } from "./systemAttributesCore.js";
+import { normalizeAttributeCredit } from "./systemAttributesCore.js";
 import "./styles/achievements.css";
 
 export default function AchievementCelebration({
@@ -208,44 +208,6 @@ export default function AchievementCelebration({
     };
   }, [event?.id]);
 
-  async function allocateCredit(credit, attribute) {
-    const actionKey = credit.id + ":" + attribute;
-    if (allocatingKey) return;
-
-    setAllocatingKey(actionKey);
-    setLedgerError("");
-    setLedgerNotice("");
-
-    try {
-      await allocateAttributeCreditOnBackend({
-        creditId: credit.id,
-        attribute,
-        amount: 1,
-      });
-
-      const cloud = await bootstrapAuthoritativeProfile();
-      if (!cloud) {
-        throw new Error("AUTHORITATIVE_REFRESH_FAILED");
-      }
-
-      const hydrated = await hydrateStructuredProfile(cloud);
-      applyAuthoritativeProfile?.(normalizeProfile(hydrated));
-
-      const refreshed = await refreshCredits({ silent: true });
-      if (!refreshed) {
-        setLedgerNotice("ALLOCATION SAVED • CREDIT BALANCE NEEDS SYNC");
-      } else {
-        setLedgerNotice("+1 " + attribute + " • ALLOCATION CONFIRMED");
-      }
-    } catch (error) {
-      console.error("ATTRIBUTE CREDIT ALLOCATION FAILED:", error);
-      setLedgerError(
-        error?.message || "ATTRIBUTE_CREDIT_ALLOCATION_FAILED"
-      );
-    } finally {
-      setAllocatingKey("");
-    }
-  }
 
   if (!event) return null;
 
