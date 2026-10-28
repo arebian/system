@@ -1,116 +1,293 @@
-.achievement-overlay{
-  --achievement-accent:var(--accent,#c43b50);
-  --achievement-panel:var(--panel-bg,#100d12);
-  --achievement-text:var(--text-primary,#f2f0f1);
-  --achievement-muted:var(--text-muted,#a9a1aa);
-  position:fixed;inset:0;z-index:12000;display:grid;place-items:center;
-  padding:clamp(12px,3vw,24px);
-  background:color-mix(in srgb,var(--app-bg,#030509) 70%,transparent);
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
-  overflow-y:auto;color:var(--achievement-text);isolation:isolate
-}
-.achievement-dialog{
-  --achievement-glow:color-mix(in srgb,var(--achievement-accent) 16%,transparent);
-  --achievement-border:color-mix(in srgb,var(--achievement-accent) 34%,var(--border,transparent));
-  position:relative;width:min(100%,420px);max-height:min(86dvh,700px);overflow-y:auto;
-  margin:auto;text-align:left;padding:clamp(20px,4vw,28px);
-  color:var(--achievement-text);
+/* THE SYSTEM — cinematic achievement chamber.
+   Shared structure; active class supplies the accent and silhouette. */
+.achievement-overlay {
+  --achievement-accent: var(--accent, #c43b50);
+  --achievement-panel: #0d1018;
+  --achievement-text: #f5f6fa;
+  --achievement-muted: #a4adbd;
+  --achievement-edge: color-mix(in srgb, var(--achievement-accent) 48%, #3a4150);
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: clamp(14px, 4vw, 32px);
+  overflow-y: auto;
+  color: var(--achievement-text);
   background:
-    radial-gradient(ellipse at 100% 0%,var(--achievement-glow),transparent 48%),
-    linear-gradient(145deg,color-mix(in srgb,var(--achievement-panel,#101116) 94%,var(--achievement-accent) 6%),var(--achievement-panel,#101116));
-  border:1px solid var(--achievement-border);
-  border-radius:var(--card-radius,12px);
-  box-shadow:0 24px 70px #0005,0 0 28px var(--achievement-glow),inset 0 1px 0 #ffffff0a;
-  animation:achievement-enter .26s cubic-bezier(.2,.8,.2,1);
-  scrollbar-width:thin;scrollbar-color:var(--achievement-border) transparent
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--achievement-accent) 15%, transparent), transparent 54%),
+    rgba(3, 5, 10, .82);
+  -webkit-backdrop-filter: blur(14px) saturate(.82);
+  backdrop-filter: blur(14px) saturate(.82);
+  isolation: isolate;
 }
-.achievement-dialog:before{
-  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
-  background:linear-gradient(125deg,color-mix(in srgb,var(--achievement-accent) 5%,transparent),transparent 42%);
+.achievement-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .16;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--achievement-accent) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--achievement-accent) 22%, transparent) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse at center, #000, transparent 78%);
 }
-.achievement-dialog>small{
-  position:relative;display:block;color:var(--achievement-muted);
-  font:600 9px 'Share Tech Mono',monospace;letter-spacing:1.6px;line-height:1.7
+.achievement-dialog {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 540px);
+  max-height: min(88dvh, 800px);
+  overflow-y: auto;
+  margin: auto;
+  padding: clamp(24px, 5vw, 42px);
+  text-align: center;
+  color: var(--achievement-text);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--achievement-accent) 8%, transparent), transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--achievement-panel) 96%, white 2%), var(--achievement-panel));
+  border: 1px solid var(--achievement-edge);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: 0 32px 100px #0009, 0 0 0 5px color-mix(in srgb, var(--achievement-accent) 5%, transparent), 0 0 55px color-mix(in srgb, var(--achievement-accent) 14%, transparent);
+  scrollbar-width: thin;
+  scrollbar-color: var(--achievement-edge) transparent;
+  animation: achievement-chamber-in .42s cubic-bezier(.16, 1, .3, 1);
 }
-.achievement-dialog>small:first-child{
-  padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid var(--border,rgba(255,255,255,.08))
+.achievement-dialog::before,
+.achievement-dialog::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
 }
-.achievement-dialog h2{
-  position:relative;font:600 11px 'Share Tech Mono',monospace;letter-spacing:2.4px;
-  text-transform:uppercase;color:var(--achievement-accent);margin:0 0 8px
+.achievement-dialog::before {
+  inset: 8px;
+  border: 1px solid color-mix(in srgb, var(--achievement-accent) 16%, transparent);
+  border-radius: max(2px, calc(var(--card-radius, 14px) - 5px));
 }
-.achievement-name{
-  position:relative;display:block;font:700 clamp(30px,6vw,42px) 'Rajdhani',sans-serif;
-  line-height:1.02;letter-spacing:.4px;color:var(--achievement-text);
-  overflow-wrap:anywhere;text-shadow:0 0 24px var(--achievement-glow)
+.achievement-dialog::after {
+  top: 0;
+  left: 12%;
+  width: 76%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--achievement-accent), transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--achievement-accent) 65%, transparent);
 }
-.achievement-dialog>p{
-  position:relative;font-size:13px;line-height:1.65;color:var(--achievement-muted);margin:12px 0
+.achievement-dialog > small {
+  position: relative;
+  display: block;
+  color: var(--achievement-muted);
+  font: 700 9px/1.6 'Share Tech Mono', monospace;
+  letter-spacing: .2em;
+  text-transform: uppercase;
 }
-.achievement-dialog .achievement-level{
-  font:10px 'Share Tech Mono',monospace;letter-spacing:1.4px;color:var(--achievement-accent);margin:10px 0
+.achievement-dialog > small:first-child {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid color-mix(in srgb, var(--achievement-accent) 24%, transparent);
 }
-.achievement-emblem{
-  position:relative;width:64px;float:right;margin:2px 0 12px 12px;opacity:.9
+.achievement-dialog > small:first-child::before,
+.achievement-dialog > small:first-child::after {
+  content: "";
+  width: 20px;
+  height: 1px;
+  background: var(--achievement-accent);
+  opacity: .8;
 }
-.achievement-emblem svg{
-  display:block;width:100%;fill:none;stroke:var(--achievement-accent);stroke-width:1.5;
-  filter:drop-shadow(0 0 8px var(--achievement-glow))
+.achievement-emblem {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 20px;
+  border: 1px solid color-mix(in srgb, var(--achievement-accent) 68%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--achievement-accent) 15%, transparent), transparent 70%);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--achievement-accent) 5%, transparent), 0 0 36px color-mix(in srgb, var(--achievement-accent) 18%, transparent), inset 0 0 22px color-mix(in srgb, var(--achievement-accent) 8%, transparent);
 }
-.achievement-emblem path:last-child{stroke-width:4;stroke-linecap:square;stroke-linejoin:miter}
-.achievement-xp{
-  position:relative;display:inline-flex;align-items:center;gap:8px;margin:6px 0 2px;padding:8px 11px;
-  border:1px solid color-mix(in srgb,var(--achievement-accent) 32%,transparent);
-  border-radius:calc(var(--card-radius,12px) * .6);
-  background:color-mix(in srgb,var(--achievement-accent) 8%,var(--surface,transparent));
-  color:var(--achievement-accent);font:10px 'Share Tech Mono',monospace;letter-spacing:1px
+.achievement-emblem::before,
+.achievement-emblem::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border: 1px solid color-mix(in srgb, var(--achievement-accent) 25%, transparent);
+  border-radius: 50%;
 }
-.achievement-gains{
-  position:relative;clear:both;list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px
+.achievement-emblem::after {
+  inset: 10px;
+  border-style: dashed;
+  opacity: .55;
 }
-.achievement-gains li{
-  display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;
-  background:var(--surface,color-mix(in srgb,var(--achievement-accent) 4%,transparent));
-  border:1px solid var(--border,color-mix(in srgb,var(--achievement-accent) 16%,transparent));
-  border-radius:calc(var(--card-radius,12px) * .65);
-  font:11px 'Share Tech Mono',monospace;color:var(--achievement-muted)
+.achievement-emblem svg {
+  display: block;
+  width: 64px;
+  height: 64px;
+  fill: none;
+  stroke: var(--achievement-accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--achievement-accent) 40%, transparent));
 }
-.achievement-gains b{color:var(--achievement-accent)}
-.achievement-dialog>button{
-  position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;
-  margin:18px 0 10px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--achievement-accent) 60%,transparent);
-  border-radius:var(--card-radius,8px);
-  background:color-mix(in srgb,var(--achievement-accent) 12%,var(--achievement-panel,#101116));
-  color:var(--achievement-text);font:600 12px 'Rajdhani',sans-serif;letter-spacing:1.8px;
-  cursor:pointer;transition:background .18s,border-color .18s,transform .18s
+.achievement-emblem path:last-child {
+  stroke-width: 4;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
-.achievement-dialog>button:hover{
-  background:color-mix(in srgb,var(--achievement-accent) 20%,var(--achievement-panel,#101116));transform:translateY(-1px)
+.achievement-dialog h2 {
+  position: relative;
+  margin: 0 0 10px;
+  color: var(--achievement-accent);
+  font: 700 10px/1.5 'Share Tech Mono', monospace;
+  letter-spacing: .25em;
+  text-transform: uppercase;
 }
-.achievement-dialog>button:focus-visible{outline:2px solid var(--achievement-accent);outline-offset:3px}
-.achievement-dialog>small:last-child{font-size:8px;letter-spacing:1.3px;opacity:.72}
-.achievement-major .achievement-dialog{--achievement-accent:var(--rank-accent,var(--accent,#d6a94e))}
-:root:has(.app.class-assassin) .achievement-dialog{--achievement-accent:#ef4444;--card-radius:12px}
-:root:has(.app.class-tank) .achievement-dialog{--achievement-accent:#c18a52;--card-radius:8px}
-:root:has(.app.class-mage) .achievement-dialog{--achievement-accent:#a855f7;--card-radius:20px}
-:root:has(.app.class-ranger) .achievement-dialog{--achievement-accent:#22a765;--card-radius:16px}
-:root:has(.app.class-commander) .achievement-dialog{--achievement-accent:#f59e0b;--card-radius:10px}
-:root:has(.app.light) .achievement-overlay{--achievement-text:#17202b;--achievement-muted:#606875}
-:root:has(.app.light) .achievement-dialog{
-  --achievement-panel:var(--panel-bg,#f7f7f8);
-  --achievement-text:var(--text-primary,#17202b);
-  --achievement-muted:var(--text-muted,#606875);
-  box-shadow:0 24px 70px #0002,0 0 26px var(--achievement-glow),inset 0 1px 0 #ffffff
+.achievement-name {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  color: var(--achievement-text);
+  font: 700 clamp(32px, 7vw, 52px)/.98 'Rajdhani', sans-serif;
+  letter-spacing: .015em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--achievement-accent) 16%, transparent);
 }
-.achievement-major .achievement-emblem{width:76px}
-@keyframes achievement-enter{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:none}}
-@media(max-width:480px){
-  .achievement-overlay{padding:10px}
-  .achievement-dialog{max-height:90dvh;padding:20px 16px}
-  .achievement-emblem{width:54px}
-  .achievement-major .achievement-emblem{width:64px}
-  .achievement-dialog>p{font-size:12px}
+.achievement-dialog > p {
+  position: relative;
+  max-width: 390px;
+  margin: 16px auto 0;
+  color: var(--achievement-muted);
+  font-size: 13px;
+  line-height: 1.7;
 }
-@media(prefers-reduced-motion:reduce){
-  .achievement-dialog{animation:none}.achievement-dialog>button{transition:none}.achievement-emblem svg{filter:none}
+.achievement-dialog .achievement-level {
+  margin: 14px 0 0;
+  color: var(--achievement-accent);
+  font: 700 10px/1.5 'Share Tech Mono', monospace;
+  letter-spacing: .15em;
+}
+.achievement-xp {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 22px auto 0;
+  padding: 11px 18px;
+  border: 1px solid color-mix(in srgb, var(--achievement-accent) 48%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--achievement-accent) 9%, transparent);
+  color: var(--achievement-accent);
+  font: 700 11px/1.4 'Share Tech Mono', monospace;
+  letter-spacing: .1em;
+}
+.achievement-gains {
+  position: relative;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 22px 0 0;
+}
+.achievement-gains li {
+  display: grid;
+  gap: 9px;
+  align-content: space-between;
+  min-width: 0;
+  min-height: 68px;
+  padding: 12px 14px;
+  text-align: left;
+  background: color-mix(in srgb, var(--achievement-accent) 5%, var(--achievement-panel));
+  border: 1px solid color-mix(in srgb, var(--achievement-accent) 24%, transparent);
+  border-radius: max(3px, calc(var(--card-radius, 14px) * .55));
+  color: var(--achievement-muted);
+  font: 10px/1.45 'Share Tech Mono', monospace;
+}
+.achievement-gains li b {
+  color: var(--achievement-accent);
+  font-size: 14px;
+}
+.achievement-dialog > button {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 50px;
+  margin: 26px 0 15px;
+  padding: 14px 17px;
+  border: 1px solid var(--achievement-accent);
+  border-radius: max(3px, calc(var(--card-radius, 14px) * .55));
+  background: var(--achievement-accent);
+  color: #080a0e;
+  font: 800 12px/1.3 'Rajdhani', sans-serif;
+  letter-spacing: .18em;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.achievement-dialog > button span {
+  font-size: 18px;
+  line-height: 1;
+}
+.achievement-dialog > button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 7px 24px color-mix(in srgb, var(--achievement-accent) 22%, transparent);
+}
+.achievement-dialog > button:focus-visible {
+  outline: 2px solid var(--achievement-text);
+  outline-offset: 4px;
+}
+.achievement-dialog > small:last-child {
+  font-size: 8px;
+  letter-spacing: .17em;
+  opacity: .65;
+}
+.achievement-major .achievement-dialog {
+  --achievement-accent: var(--rank-accent, var(--accent, #d6a94e));
+}
+:root:has(.app.class-assassin) .achievement-overlay { --achievement-accent: #ef4444; --card-radius: 12px; }
+:root:has(.app.class-tank) .achievement-overlay { --achievement-accent: #c18a52; --card-radius: 8px; }
+:root:has(.app.class-mage) .achievement-overlay { --achievement-accent: #a855f7; --card-radius: 20px; }
+:root:has(.app.class-ranger) .achievement-overlay { --achievement-accent: #22a765; --card-radius: 16px; }
+:root:has(.app.class-commander) .achievement-overlay { --achievement-accent: #f59e0b; --card-radius: 10px; }
+:root:has(.app.light) .achievement-overlay {
+  --achievement-panel: #fbfcff;
+  --achievement-text: #17202b;
+  --achievement-muted: #5d6878;
+  --achievement-edge: color-mix(in srgb, var(--achievement-accent) 38%, #c9d0da);
+  background:
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--achievement-accent) 11%, transparent), transparent 56%),
+    rgba(19, 27, 39, .38);
+}
+:root:has(.app.light) .achievement-dialog {
+  box-shadow: 0 30px 85px #1113, 0 0 0 5px color-mix(in srgb, var(--achievement-accent) 4%, transparent), 0 0 42px color-mix(in srgb, var(--achievement-accent) 12%, transparent);
+}
+.achievement-major .achievement-emblem { transform: scale(1.06); }
+@keyframes achievement-chamber-in {
+  from { opacity: 0; transform: translateY(18px) scale(.97); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@media (max-width: 480px) {
+  .achievement-overlay { padding: 10px; }
+  .achievement-dialog { max-height: 92dvh; padding: 25px 18px; }
+  .achievement-dialog > small:first-child { margin-bottom: 18px; font-size: 8px; letter-spacing: .13em; }
+  .achievement-emblem { width: 88px; height: 88px; margin-bottom: 17px; }
+  .achievement-emblem svg { width: 52px; height: 52px; }
+  .achievement-name { font-size: clamp(30px, 9vw, 42px); }
+  .achievement-dialog > p { font-size: 12px; }
+  .achievement-gains { grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .achievement-dialog { animation: none; }
+  .achievement-dialog > button { transition: none; }
+  .achievement-emblem svg { filter: none; }
 }
