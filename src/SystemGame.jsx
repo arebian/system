@@ -19555,6 +19555,8 @@ export function SystemGame() {
 
       <AchievementCelebration
         event={celebrationQueue[0] || null}
+        profile={profile}
+        applyAuthoritativeProfile={applyAuthoritativeProfile}
         onDismiss={() => setCelebrationQueue(queue => queue.slice(1))}
         onSound={type => { if (sfxEnabled && sfxVolume > 0) playSFX(type, sfxVolume); }}
       />
