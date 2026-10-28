@@ -50,6 +50,8 @@ export default function AchievementCelebration({
   }, []);
 
   const allocationFlights = useRef(new Map());
+  const applyProfileRef = useRef(applyAuthoritativeProfile);
+  applyProfileRef.current = applyAuthoritativeProfile;
 
   const rankQuestAttributes = useCallback((credit) => {
     const text = (String(credit?.sourceTitle || "") + " " +
@@ -76,12 +78,14 @@ export default function AchievementCelebration({
     return [...ordered, ...eligible.filter((attribute) => !ordered.includes(attribute))];
   }, []);
 
-  const autoAllocateCredits = useCallback(async (rows, eventId) => {
-    if (allocationFlights.current.has(eventId)) {
-      return allocationFlights.current.get(eventId);
+  const autoAllocateCredits = useCallback(async (rows) => {
+    const flightKey = "QUEST_CREDIT_LEDGER";
+    if (allocationFlights.current.has(flightKey)) {
+      return allocationFlights.current.get(flightKey);
     }
 
     const flight = (async () => {
+      setAllocatingKey("AUTO");
       setLedgerStatus("ALLOCATING");
       setLedgerError("");
       setLedgerNotice("");
@@ -110,7 +114,7 @@ export default function AchievementCelebration({
           const cloud = await bootstrapAuthoritativeProfile();
           if (!cloud) throw new Error("AUTHORITATIVE_REFRESH_FAILED");
           const hydrated = await hydrateStructuredProfile(cloud);
-          applyAuthoritativeProfile?.(normalizeProfile(hydrated));
+          applyProfileRef.current?.(normalizeProfile(hydrated));
         }
 
         const freshRows = await loadAttributeCredits();
@@ -134,13 +138,14 @@ export default function AchievementCelebration({
           // Keep the actionable allocation error visible.
         }
       } finally {
-        allocationFlights.current.delete(eventId);
+        setAllocatingKey("");
+        allocationFlights.current.delete(flightKey);
       }
     })();
 
-    allocationFlights.current.set(eventId, flight);
+    allocationFlights.current.set(flightKey, flight);
     return flight;
-  }, [applyAuthoritativeProfile, rankQuestAttributes]);
+  }, [rankQuestAttributes]);
   useEffect(() => {
     if (!event) {
       setCredits([]);
@@ -166,7 +171,7 @@ export default function AchievementCelebration({
           setLedgerStatus("READY");
           return;
         }
-        void autoAllocateCredits(normalized, String(event.id));
+        void autoAllocateCredits(normalized);
       })
       .catch((error) => {
         if (!active) return;
