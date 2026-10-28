@@ -58,7 +58,7 @@
 .achievement-dialog::after {
   content: "";
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
 }
 .achievement-dialog::before {
@@ -67,6 +67,7 @@
   border-radius: max(2px, calc(var(--card-radius, 14px) - 5px));
 }
 .achievement-dialog::after {
+  z-index: 2;
   top: 0;
   left: 12%;
   width: 76%;
@@ -250,9 +251,6 @@
   font-size: 8px;
   letter-spacing: .17em;
   opacity: .65;
-}
-.achievement-major .achievement-dialog {
-  --achievement-accent: var(--rank-accent, var(--accent, #d6a94e));
 }
 :root:has(.app.class-assassin) .achievement-overlay { --achievement-accent: #ef4444; --card-radius: 12px; }
 :root:has(.app.class-tank) .achievement-overlay { --achievement-accent: #c18a52; --card-radius: 8px; }
