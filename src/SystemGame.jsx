@@ -8197,6 +8197,9 @@ export function Attributes({
       );
 
       setCreditStatus("READY");
+      if (!silent) {
+        setCreditNotice("ATTRIBUTE CREDITS SYNCED • BACKEND CONFIRMED");
+      }
     } catch (error) {
       console.warn(
         "ATTRIBUTE CREDIT LEDGER DEFERRED:",
@@ -19554,6 +19557,7 @@ export function SystemGame() {
       />
 
       <AchievementCelebration
+        path={profile?.path}
         event={celebrationQueue[0] || null}
         onDismiss={() => setCelebrationQueue(queue => queue.slice(1))}
         onSound={type => { if (sfxEnabled && sfxVolume > 0) playSFX(type, sfxVolume); }}
