@@ -136,7 +136,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                 <div className="quest-objective-completion">
                   <textarea
                     value={completionNotes[item.id] || ""}
-                    onChange={event => setCompletionNotes(current => ({ ...current, [item.id]: event.target.value }))}
+                    onChange={event => { setCompletionNotes(current => ({ ...current, [item.id]: event.target.value })); setReviewResults(current => ({ ...current, [item.id]: null })); }}
                     placeholder="Record what you did and the result (minimum 12 characters)…"
                     rows={2}
                     maxLength={1200}
