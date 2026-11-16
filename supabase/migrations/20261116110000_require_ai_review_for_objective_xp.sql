@@ -17,7 +17,7 @@ create or replace function public.system_complete_quest_objective(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
