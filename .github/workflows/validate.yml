@@ -36,3 +36,34 @@ jobs:
         run: npm run test:browser:objectives
       - name: Build production bundle
         run: npm run build
+
+  local-supabase-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Start isolated local Supabase
+        run: supabase start
+      - name: Apply repository migrations to local database
+        run: supabase db reset
+      - name: Export local Supabase test credentials
+        shell: bash
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Test authenticated profile and private proof flows
+        run: npm run test:supabase:integration
