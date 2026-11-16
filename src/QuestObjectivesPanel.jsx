@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
+import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
 export default function QuestObjectivesPanel({ userQuestId, identity, profile, onProfileUpdated }) {
   const [tasks, setTasks] = useState([]);
@@ -9,6 +10,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [completionNotes, setCompletionNotes] = useState({});
+  const [reviewResults, setReviewResults] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -59,26 +61,47 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     } finally { setBusy(false); }
   }, [busy]);
 
-  const completeObjective = useCallback(async (objectiveId) => {
-    const note = String(completionNotes[objectiveId] || "").trim();
-    if (note.length < 12) {
-      setMessage("Add a short completion note (at least 12 characters) before recording this objective.");
+  const reviewObjective = useCallback(async (objectiveId) => {
+    const evidence = String(completionNotes[objectiveId] || "").trim();
+    if (evidence.length < 12) {
+      setMessage("Describe what you completed and the result (at least 12 characters).");
       return;
     }
     if (busy) return;
     setBusy(true); setMessage("");
     try {
-      const result = await completeQuestObjectiveOnBackend({ objectiveId, completionNote: note });
+      const review = await reviewQuestObjectiveOnBackend({ objectiveId, evidence });
+      setReviewResults(current => ({ ...current, [objectiveId]: review }));
+      setMessage(review?.decision === "APPROVE"
+        ? "Evidence approved. Review the assessment, then choose whether to claim the objective XP."
+        : review?.decision === "CLARIFY"
+          ? "The System needs one clarification. Update your evidence and submit it again."
+          : "The evidence does not yet meet the objective. Complete the remaining work and retry.");
+    } catch (error) {
+      setMessage(error?.message || "OBJECTIVE_REVIEW_FAILED");
+    } finally { setBusy(false); }
+  }, [completionNotes, busy]);
+
+  const completeObjective = useCallback(async (objectiveId) => {
+    const review = reviewResults[objectiveId];
+    if (!review?.id || review.decision !== "APPROVE") {
+      setMessage("An approved AI review is required before claiming objective XP.");
+      return;
+    }
+    if (busy) return;
+    setBusy(true); setMessage("");
+    try {
+      const result = await completeQuestObjectiveOnBackend({ objectiveId, reviewId: review.id });
       setObjectives(current => current.map(item =>
         item.id === objectiveId ? { ...item, ...(result?.objective || {}), status: "COMPLETED" } : item
       ));
       const cloudProfile = await bootstrapAuthoritativeProfile();
       if (cloudProfile && onProfileUpdated) onProfileUpdated(cloudProfile);
-      setMessage(result?.duplicate ? "This objective was already recorded." : "Objective recorded. XP was awarded by the System.");
+      setMessage(result?.duplicate ? "This objective was already recorded." : "Objective completed. XP was awarded by the System.");
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_COMPLETION_FAILED");
     } finally { setBusy(false); }
-  }, [completionNotes, busy, onProfileUpdated]);
+  }, [reviewResults, busy, onProfileUpdated]);
 
   if (!userQuestId) return null;
 
@@ -119,14 +142,29 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                     maxLength={1200}
                     disabled={busy}
                   />
-                  <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => completeObjective(item.id)}>
-                    {busy ? "RECORDING…" : "RECORD COMPLETION"}
+                  <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => reviewObjective(item.id)}>
+                    {busy ? "REVIEWING…" : "SUBMIT EVIDENCE FOR AI REVIEW"}
                   </button>
-                  <small>Player attestation is recorded with your note. The System awards XP only after the backend accepts it.</small>
+                  {reviewResults[item.id] && (
+                    <div className={"quest-objective-review is-" + String(reviewResults[item.id].decision || "pending").toLowerCase()}>
+                      <strong>{reviewResults[item.id].decision} // SYSTEM REVIEW</strong>
+                      <span>{reviewResults[item.id].reason}</span>
+                      {reviewResults[item.id].question && <span>{reviewResults[item.id].question}</span>}
+                      {Array.isArray(reviewResults[item.id].missing) && reviewResults[item.id].missing.length > 0 && (
+                        <small>STILL NEEDED: {reviewResults[item.id].missing.join(" · ")}</small>
+                      )}
+                      {reviewResults[item.id].decision === "APPROVE" && (
+                        <button type="button" disabled={busy} onClick={() => completeObjective(item.id)}>
+                          {busy ? "CLAIMING…" : "CONFIRM & CLAIM +" + item.xp_reward + " XP"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <small>AI reviews your evidence and recommends a decision. XP is awarded only after an approved review and your explicit confirmation.</small>
                 </div>
               )}
               {item.status === "COMPLETED" && (
-                <small className="quest-objectives-confirmed">COMPLETED · SERVER XP RECORDED</small>
+                <small className="quest-objectives-confirmed">COMPLETED · AI REVIEW APPROVED · SERVER XP RECORDED</small>
               )}
             </article>
           ))}
