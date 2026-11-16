@@ -44,7 +44,7 @@ export async function reviewQuestOnBackend({ title, assignedFor, proof }) {
   return livingSystemAction("review_quest", { title, assigned_for: assignedFor, proof });
 }
 
-export async function reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId = null }) {
+export async function reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId = null, imagePath = null }) {
   return livingSystemAction("review_quest_objective", {
     objective_id: objectiveId,
     timer_session_id: timerSessionId,
@@ -52,6 +52,7 @@ export async function reviewQuestObjectiveOnBackend({ objectiveId, evidence, tim
       type: "RESULT",
       detail: String(evidence || "").trim().slice(0, 5000),
       note: String(evidence || "").trim().slice(0, 1000),
+      imagePath: String(imagePath || ""),
     },
   });
 }
