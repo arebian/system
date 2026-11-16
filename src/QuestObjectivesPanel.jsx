@@ -26,14 +26,21 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     return () => { active = false; };
   }, [userQuestId]);
 
-  const recommendations = useMemo(
-    () => recommendQuestObjectives(tasks, identity, profile, 3),
-    [tasks, identity, profile]
-  );
-  const summary = objectiveProposalSummary(objectives);
+  const lockedObjectives = objectives.filter(item => item.status === "ACCEPTED" || item.status === "COMPLETED");
+  const recommendationLimit = Math.max(0, 3 - lockedObjectives.length);
+  const recommendations = useMemo(() => {
+    const unavailableTaskIds = new Set(objectives.map(item => item.task_id).filter(Boolean));
+    const lockedPillars = new Set(lockedObjectives.map(item => item.pillar));
+    const availableTasks = tasks.filter(task =>
+      !unavailableTaskIds.has(task.id) && !lockedPillars.has(task.pillar)
+    );
+    return recommendQuestObjectives(availableTasks, identity, profile, recommendationLimit);
+  }, [tasks, identity, profile, objectives, recommendationLimit]);
+  const visibleObjectives = objectives.filter(item => item.status !== "REJECTED");
+  const summary = objectiveProposalSummary(visibleObjectives);
 
   const generate = useCallback(async () => {
-    if (!userQuestId || recommendations.length !== 3 || busy) return;
+    if (!userQuestId || recommendationLimit < 1 || recommendations.length !== recommendationLimit || busy) return;
     setBusy(true); setMessage("");
     try {
       const result = await proposeQuestObjectivesOnBackend({
@@ -46,7 +53,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_PROPOSAL_FAILED");
     } finally { setBusy(false); }
-  }, [userQuestId, recommendations, busy]);
+  }, [userQuestId, recommendations, recommendationLimit, busy]);
 
   const decide = useCallback(async (objectiveId, decision) => {
     if (busy) return;
@@ -112,13 +119,13 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
         <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"}</span>
       </div>
       <p>Three focused actions: physical development, intellectual development and a task aligned with your identity. AI recommends; you decide.</p>
-      {!objectives.length ? (
-        <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== 3 || busy} onClick={generate}>
+      {!visibleObjectives.length ? (
+        <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
           {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING…" : "GENERATE 3 OBJECTIVES"}
         </button>
       ) : (
         <div className="quest-objectives-list">
-          {objectives.map((item,index) => (
+          {visibleObjectives.map((item,index) => (
             <article className="quest-objective-item" key={item.id}>
               <div className="quest-objective-item-head">
                 <small>0{index+1} // {item.pillar}</small><strong>+{item.xp_reward} XP</strong>
@@ -168,6 +175,11 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
               )}
             </article>
           ))}
+          {recommendationLimit > 0 && summary.proposed === 0 && summary.completed === 0 && (
+            <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || busy} onClick={generate}>
+              {busy ? "GENERATING…" : "GENERATE " + recommendationLimit + " REPLACEMENT OBJECTIVE" + (recommendationLimit === 1 ? "" : "S")}
+            </button>
+          )}
           {summary.proposed === 0 && summary.allAccepted && (
             <small className="quest-objectives-confirmed">ALL THREE OBJECTIVES APPROVED — COMPLETE EACH ONE TO UNLOCK THE PARENT QUEST.</small>
           )}
