@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 
-export default function QuestObjectivesPanel({ userQuestId, identity, profile }) {
+export default function QuestObjectivesPanel({ userQuestId, identity, profile, onProfileUpdated }) {
   const [tasks, setTasks] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [status, setStatus] = useState("LOADING");
@@ -72,11 +72,13 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile })
       setObjectives(current => current.map(item =>
         item.id === objectiveId ? { ...item, ...(result?.objective || {}), status: "COMPLETED" } : item
       ));
+      const cloudProfile = await bootstrapAuthoritativeProfile();
+      if (cloudProfile && onProfileUpdated) onProfileUpdated(cloudProfile);
       setMessage(result?.duplicate ? "This objective was already recorded." : "Objective recorded. XP was awarded by the System.");
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_COMPLETION_FAILED");
     } finally { setBusy(false); }
-  }, [completionNotes, busy]);
+  }, [completionNotes, busy, onProfileUpdated]);
 
   if (!userQuestId) return null;
 
@@ -84,7 +86,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile })
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
         <div><small>QUEST EXPANSION // SYSTEM AI</small><h4>MINI-QUEST OBJECTIVES</h4></div>
-        <span>{objectives.length ? `${summary.accepted}/${summary.total} ACCEPTED` : "3 REQUIRED"}</span>
+        <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"}</span>
       </div>
       <p>Three focused actions: physical development, intellectual development and a task aligned with your identity. AI recommends; you decide.</p>
       {!objectives.length ? (
@@ -128,7 +130,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile })
               )}
             </article>
           ))}
-          {summary.proposed === 0 && summary.accepted === summary.total && (
+          {summary.proposed === 0 && summary.allAccepted && (
             <small className="quest-objectives-confirmed">ALL THREE OBJECTIVES APPROVED — COMPLETE EACH ONE TO UNLOCK THE PARENT QUEST.</small>
           )}
         </div>
