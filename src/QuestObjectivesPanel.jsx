@@ -30,7 +30,9 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const recommendationLimit = Math.max(0, 3 - lockedObjectives.length);
   const recommendations = useMemo(() => {
     const unavailableTaskIds = new Set(objectives.map(item => item.task_id).filter(Boolean));
-    const lockedPillars = new Set(lockedObjectives.map(item => item.pillar));
+    const lockedPillars = new Set(objectives
+      .filter(item => item.status === "ACCEPTED" || item.status === "COMPLETED")
+      .map(item => item.pillar));
     const availableTasks = tasks.filter(task =>
       !unavailableTaskIds.has(task.id) && !lockedPillars.has(task.pillar)
     );
