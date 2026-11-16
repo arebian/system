@@ -42,6 +42,10 @@ try {
   assert.ifError(ownProfile.error);
   assert.deepEqual(ownProfile.data.profile_data.identity, identity);
 
+  const taskLibrary = await first.client.from("quest_task_library").select("id,pillar").limit(3);
+  assert.ifError(taskLibrary.error);
+  assert.ok(Array.isArray(taskLibrary.data), "Authenticated player can read the curated objective library");
+
   const crossProfile = await first.client.from("profiles").select("id").eq("id", second.id);
   assert.ifError(crossProfile.error);
   assert.deepEqual(crossProfile.data, [], "RLS must hide another authenticated user's profile");
