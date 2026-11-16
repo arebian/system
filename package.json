@@ -10,7 +10,8 @@
     "test": "node --test tests/*.test.mjs",
     "test:browser:living": "node tests/browser/living-workflow.cjs",
     "test:browser:objectives": "node tests/browser/multi-objective-workflow.cjs",
-    "test:supabase:integration": "node tests/supabase-auth-storage.integration.mjs"
+    "test:supabase:integration": "node tests/supabase-auth-storage.integration.mjs",
+    "test:browser:auth": "node tests/browser/auth-screen-smoke.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
