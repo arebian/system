@@ -138,7 +138,7 @@ begin
 
   if exists (
     select 1 from public.user_quest_objectives
-    where user_quest_id=p_user_quest_id and status='COMPLETED'
+    where user_quest_id=p_user_quest_id and status in ('ACCEPTED','COMPLETED')
   ) then raise exception 'OBJECTIVES_ALREADY_STARTED'; end if;
 
   delete from public.user_quest_objectives
@@ -176,7 +176,7 @@ create or replace function public.system_decide_quest_objective(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = public, auth
 as $$
 declare
