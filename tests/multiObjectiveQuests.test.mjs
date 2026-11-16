@@ -69,10 +69,8 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
   const started = (await db.query("select public.system_start_quest_objective_timer($1) as value", [timerObjective.id])).rows[0].value.session;
   const resumed = (await db.query("select public.system_start_quest_objective_timer($1) as value", [timerObjective.id])).rows[0].value;
   assert.equal(resumed.resumed, true, "a refresh/restart resumes the existing running timer");
-  await assert.rejects(db.query("select public.system_finish_quest_objective_timer($1)", [started.id]), /does not exist/).catch(async () => {
-    const early = (await db.query("select public.system_finish_quest_objective_timer($1) as value", [started.id])).rows[0].value;
-    assert.equal(early.status, "TOO_EARLY");
-  }), /never/).catch(() => {});
+  const early = (await db.query("select public.system_finish_quest_objective_timer($1) as value", [started.id])).rows[0].value;
+  assert.equal(early.status, "TOO_EARLY", "server must reject an early timer finish");
   await db.query("update public.user_quest_objective_timer_sessions set started_at=now()-interval '90 minutes' where id=$1", [started.id]);
   const finished = (await db.query("select public.system_finish_quest_objective_timer($1) as value", [started.id])).rows[0].value;
   assert.equal(finished.session.status, "COMPLETED");
