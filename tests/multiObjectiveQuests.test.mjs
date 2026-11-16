@@ -50,10 +50,10 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
   assert.equal(proposed.objectives.length, 3, "SYSTEM must propose exactly three objectives");
   const objectiveByTask = new Map(proposed.objectives.map(row => [row.task_id,row]));
   const rows = proposed.objectives;
-  const rejected = rows[0];
+  const rejected = rows.find(row => row.proof_type !== "TIMER");
+  const retained = rows.filter(row => row.id !== rejected.id);
   await db.query("select public.system_decide_quest_objective($1,'REJECT')", [rejected.id]);
-  await db.query("select public.system_decide_quest_objective($1,'ACCEPT')", [rows[1].id]);
-  await db.query("select public.system_decide_quest_objective($1,'ACCEPT')", [rows[2].id]);
+  for (const row of retained) await db.query("select public.system_decide_quest_objective($1,'ACCEPT')", [row.id]);
   await assert.rejects(propose([rejected.task_id]), /TASK_ALREADY_USED_FOR_PARENT/);
   const replacement = (await propose([photoTask])).rows[0].value.objectives;
   assert.equal(replacement.length, 3, "replacement should preserve the two accepted objectives");
@@ -123,6 +123,7 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
 test("adaptive objective recommendations respect identity, balance, recency and three-task limit", () => {
   const tasks = [
     { id: "p1", title: "Move", pillar: "PHYSICAL", difficulty: "EASY", duration_minutes: 10, proof_type: "HONOR" },
+    { id: "p2", title: "Mobility", pillar: "PHYSICAL", difficulty: "NORMAL", duration_minutes: 15, proof_type: "HONOR" },
     { id: "i1", title: "Read", pillar: "INTELLECT", difficulty: "NORMAL", duration_minutes: 20, proof_type: "NOTE" },
     { id: "d1", title: "Plan", pillar: "DISCIPLINE", difficulty: "HARD", duration_minutes: 5, proof_type: "NOTE" },
     { id: "w1", title: "Build", pillar: "WEALTH", difficulty: "NORMAL", duration_minutes: 20, proof_type: "TIMER" },
