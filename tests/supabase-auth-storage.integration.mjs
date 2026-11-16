@@ -22,7 +22,7 @@ const makeUser = async (suffix) => {
   const signed = await client.auth.signInWithPassword({ email, password });
   if (signed.error) throw signed.error;
   assert.equal(signed.data.user.id, data.user.id);
-  return { id: data.user.id, client };
+  return { id: data.user.id, client, accessToken: signed.data.session.access_token };
 };
 
 try {
@@ -41,6 +41,27 @@ try {
   const ownProfile = await first.client.from("profiles").select("id,profile_data").eq("id", first.id).single();
   assert.ifError(ownProfile.error);
   assert.deepEqual(ownProfile.data.profile_data.identity, identity);
+
+  const edgeHeaders = {
+    apikey: anonKey,
+    Authorization: `Bearer ${first.accessToken}`,
+    "Content-Type": "application/json",
+  };
+  const edgeHealth = await fetch(`${url}/functions/v1/system-api`, {
+    method: "POST", headers: edgeHeaders, body: JSON.stringify({ action: "health" }),
+  });
+  assert.equal(edgeHealth.status, 200, "Authenticated Edge Function health action must succeed");
+  const healthBody = await edgeHealth.json();
+  assert.equal(healthBody.data.status, "ONLINE");
+  assert.equal(healthBody.data.user_id, first.id);
+
+  const bootstrapResponse = await fetch(`${url}/functions/v1/system-api`, {
+    method: "POST", headers: edgeHeaders, body: JSON.stringify({ action: "bootstrap" }),
+  });
+  assert.equal(bootstrapResponse.status, 200, "Authenticated Edge Function bootstrap must succeed");
+  const bootstrapBody = await bootstrapResponse.json();
+  assert.equal(bootstrapBody.data.profile.id, first.id);
+  assert.deepEqual(bootstrapBody.data.profile.profile_data.identity, identity);
 
   const taskLibrary = await first.client.from("quest_task_library").select("id,pillar").limit(3);
   assert.ifError(taskLibrary.error);
@@ -81,6 +102,8 @@ try {
     checks: [
       "real local Auth signup and password session",
       "authenticated profile initialization",
+      "authenticated Edge Function health and user binding",
+      "authenticated Edge Function bootstrap and profile hydration",
       "identity persistence in profile_data",
       "cross-user profile isolation by RLS",
       "unauthenticated profile initialization rejected",
