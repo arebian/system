@@ -44,7 +44,7 @@ values
 ('INTELLECT_READ','READ AND RECALL','Read for 15 minutes, then write three points you remember without looking.','INTELLECT','EASY',20,1,10,'NOTE',null),
 ('INTELLECT_LEARN','SKILL PRACTICE','Spend 20 focused minutes practising one useful skill and record what improved.','INTELLECT','NORMAL',20,2,15,'NOTE',null),
 ('INTELLECT_SYNTHESIZE','TEACH BACK','Explain one thing you learned today in your own words, in writing or aloud.','INTELLECT','NORMAL',15,3,20,'NOTE',null),
-('WEALTH_TRACK','MONEY CHECK-IN','Record today's spending and review one upcoming financial commitment.','WEALTH','EASY',10,1,10,'NOTE','Do not share account numbers, passwords or sensitive financial credentials.'),
+('WEALTH_TRACK','MONEY CHECK-IN','Record daily spending and review one upcoming financial commitment.','WEALTH','EASY',10,1,10,'NOTE','Do not share account numbers, passwords or sensitive financial credentials.'),
 ('WEALTH_BUILD','BUILD AN ASSET','Spend 25 minutes on a practical income, career or business-building action.','WEALTH','NORMAL',25,2,20,'TIMER',null),
 ('WEALTH_RESEARCH','OPPORTUNITY RESEARCH','Research one realistic opportunity and write its costs, risks and next step.','WEALTH','NORMAL',20,3,20,'NOTE','Avoid committing money based only on unverified claims.'),
 ('SOCIAL_REACH_OUT','MEANINGFUL CONNECTION','Reach out to someone with a thoughtful message or check-in.','SOCIAL','EASY',5,1,10,'HONOR',null),
