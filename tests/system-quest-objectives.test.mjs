@@ -30,13 +30,14 @@ test("proposal summary reports acceptance state", () => {
   ]),{total:3,accepted:1,proposed:1,completed:1,allAccepted:false});
 });
 
-test("recommendations skip timer-only tasks until objective timers are integrated", () => {
+test("recommendations can include timer objectives now that server verification exists", () => {
   const result = recommendQuestObjectives([
     {id:"timer",title:"FOCUS TIMER",pillar:"PHYSICAL",difficulty:"EASY",duration_minutes:10,proof_type:"TIMER"},
     {id:"note",title:"MOVE",pillar:"PHYSICAL",difficulty:"EASY",duration_minutes:10,proof_type:"HONOR"},
     {id:"read",title:"READ",pillar:"INTELLECT",difficulty:"NORMAL",duration_minutes:15,proof_type:"NOTE"},
     {id:"wealth",title:"BUILD",pillar:"WEALTH",difficulty:"NORMAL",duration_minutes:20,proof_type:"NOTE"},
   ],{primary:"WEALTH"},{level:1},3);
-  assert.ok(result.every(item => item.proof_type !== "TIMER"));
-  assert.equal(result[0].id,"note");
+  assert.equal(result.length,3);
+  assert.ok(result.some(item => item.proof_type === "TIMER"));
+  assert.equal(new Set(result.map(item => item.pillar)).size,3);
 });
