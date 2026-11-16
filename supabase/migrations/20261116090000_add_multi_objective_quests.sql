@@ -112,7 +112,7 @@ create or replace function public.system_propose_quest_objectives(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = public, auth
 as $$
 declare
@@ -122,8 +122,6 @@ declare
   v_id uuid;
   v_count integer := 0;
   v_result jsonb := '[]'::jsonb;
-  v_profile_data jsonb;
-  v_identity jsonb;
 begin
   if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
   if coalesce(array_length(p_task_ids,1),0) < 1 or array_length(p_task_ids,1) > 3 then
@@ -137,9 +135,6 @@ begin
   where id=p_user_quest_id and user_id=v_user for update;
   if not found then raise exception 'QUEST_NOT_FOUND'; end if;
   if v_parent.status not in ('ASSIGNED','ACCEPTED') then raise exception 'QUEST_NOT_OPEN'; end if;
-
-  select profile_data into v_profile_data from public.profiles where id=v_user;
-  v_identity := coalesce(v_profile_data->'identity','{}'::jsonb);
 
   if exists (
     select 1 from public.user_quest_objectives
