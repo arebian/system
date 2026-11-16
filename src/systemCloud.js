@@ -824,6 +824,8 @@ export async function initializeProfileOnBackend(profile) {
           sleepSchedule:
             profile?.sleepSchedule ||
             null,
+          identity:
+            profile?.identity || null,
         },
       }
     );
