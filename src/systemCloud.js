@@ -657,6 +657,35 @@ export async function completeQuestObjectiveOnBackend({ objectiveId, reviewId })
   return response?.data || response;
 }
 
+export async function fetchQuestObjectiveTimer(objectiveId) {
+  const { data, error } = await supabase
+    .from("user_quest_objective_timer_sessions")
+    .select("id,objective_id,started_at,finished_at,elapsed_seconds,status")
+    .eq("objective_id", objectiveId)
+    .eq("status", "RUNNING")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+export async function startQuestObjectiveTimer(objectiveId) {
+  const { data, error } = await supabase.rpc("system_start_quest_objective_timer", {
+    p_objective_id: objectiveId,
+  });
+  if (error) throw error;
+  return data?.session || null;
+}
+
+export async function finishQuestObjectiveTimer(sessionId) {
+  const { data, error } = await supabase.rpc("system_finish_quest_objective_timer", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return data || null;
+}
+
 export async function systemApiHealth() {
   const response =
     await invokeSystemApi(
