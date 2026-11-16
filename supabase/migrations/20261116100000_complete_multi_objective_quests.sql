@@ -7,7 +7,7 @@ create or replace function public.system_complete_quest_objective(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -81,7 +81,7 @@ create or replace function public.system_guard_parent_quest_objectives()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_total integer;
