@@ -654,7 +654,7 @@ export async function completeQuestObjectiveOnBackend({ objectiveId, completionN
   const response = await invokeSystemApi("complete_quest_objective", {
     objective_id: objectiveId,
     completion_note: completionNote,
-  }, { idempotencyKey: `quest-objective-complete:${objectiveId}` });
+  }, { idempotencyKey: `quest-objective-complete:${objectiveId}:${Date.now()}` });
   return response?.data || response;
 }
 
