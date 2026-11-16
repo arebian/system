@@ -638,7 +638,7 @@ export async function proposeQuestObjectivesOnBackend({ userQuestId, taskIds, re
     user_quest_id: userQuestId,
     task_ids: taskIds,
     reasons,
-  }, { idempotencyKey: `quest-objectives-propose:${userQuestId}:${taskIds.join(",")}` });
+  }, { idempotencyKey: `quest-objectives-propose:${userQuestId}:${Date.now()}:${taskIds.join(",")}` });
   return response?.data || response;
 }
 
