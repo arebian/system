@@ -27,3 +27,23 @@
 .equipment-loadout button {margin-top:14px;min-height:42px;padding:8px 14px;border:1px solid var(--accent);background:transparent;color:inherit;border-radius:8px;cursor:pointer}
 .equipment-attribute-detail {color:var(--accent);white-space:normal}
 .soundtrack-status {font-size:12px;line-height:1.5}
+
+
+/* Identity-aware multi-objective quest panel. */
+.quest-objectives-panel{margin:12px 0 18px;padding:16px;border:1px solid var(--border-color,rgba(180,180,180,.24));border-radius:12px;background:var(--panel-bg,rgba(0,0,0,.08));color:inherit}
+.quest-objectives-head,.quest-objective-item-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.quest-objectives-head small,.quest-objective-item-head small{font-size:10px;letter-spacing:.12em;opacity:.72}
+.quest-objectives-head h4{margin:5px 0 0;font-size:14px;letter-spacing:.08em}
+.quest-objectives-panel>p{font-size:12px;line-height:1.55;opacity:.78}
+.quest-objectives-panel button{min-height:36px;padding:8px 12px;border:1px solid var(--accent);border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.quest-objectives-panel button:disabled{opacity:.45;cursor:not-allowed}
+.quest-objectives-list{display:grid;gap:10px;margin-top:12px}
+.quest-objective-item{padding:12px;border:1px solid var(--border-color,rgba(180,180,180,.2));border-radius:9px;background:rgba(128,128,128,.06)}
+.quest-objective-item-head strong{font-size:12px;color:var(--accent)}
+.quest-objective-item h5{margin:8px 0 5px;font-size:13px}
+.quest-objective-item p{margin:0;font-size:12px;line-height:1.55;opacity:.8}
+.quest-objective-meta{margin-top:9px;font-size:10px;letter-spacing:.08em;opacity:.65}
+.quest-objective-actions{display:flex;gap:8px;margin-top:10px}
+.quest-objective-actions button:last-child{border-color:var(--border-color,rgba(180,180,180,.3));opacity:.8}
+.quest-objectives-confirmed,.quest-objectives-message{display:block;margin-top:10px;font-size:11px;line-height:1.5;opacity:.8}
+.quest-objectives-message.is-error{color:#e06a6a}
