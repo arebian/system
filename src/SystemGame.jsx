@@ -4497,12 +4497,7 @@ export function QuestPage({
       id: "discipline",
       type:
         "DISCIPLINE",
-      ...pick(
-        MUST_DISCIPLINE,
-        date +
-          profile.path +
-          "must1"
-      ),
+      ...MUST_DISCIPLINE[0],
     },
     {
       id: "physical",
@@ -6333,7 +6328,7 @@ export function QuestPage({
                   )
                 }
               />
-              {state?.backendQuestId && (
+              {state?.backendQuestId && quest.name === "NO ZERO DAY" && (
                 <QuestObjectivesPanel
                   userQuestId={state.backendQuestId}
                   identity={profile.identity}
