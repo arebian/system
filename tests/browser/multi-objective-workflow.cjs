@@ -13,7 +13,8 @@ const { chromium } = require('playwright');
  const tasks=[
   {id:'timer-task',pillar:'PHYSICAL',title:'FOCUSED MOVEMENT',objective:'Complete a focused movement session and record what improved.',difficulty:'NORMAL',duration_minutes:1,xp_reward:20,proof_type:'TIMER'},
   {id:'photo-task',pillar:'INTELLECT',title:'READ AND CAPTURE',objective:'Read a short section and capture a useful takeaway.',difficulty:'NORMAL',duration_minutes:10,xp_reward:25,proof_type:'PHOTO'},
-  {id:'note-task',pillar:'DISCIPLINE',title:'PLAN TOMORROW',objective:'Prepare tomorrow\'s priorities and record the result.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'}
+  {id:'note-task',pillar:'DISCIPLINE',title:'PLAN TOMORROW',objective:'Prepare tomorrow\'s priorities and record the result.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'},
+  {id:'social-task',pillar:'SOCIAL',title:'REACH OUT',objective:'Make a thoughtful connection and record the outcome.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'}
  ];
  export async function fetchQuestTaskLibrary(){return tasks;}
  export async function fetchQuestObjectives(){return rows;}
