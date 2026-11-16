@@ -21,7 +21,7 @@ test("backend migration enforces review ownership, proof binding, idempotency an
     try {
       await db.exec(await readFile(new URL(filename, directory), "utf8"));
     } catch (error) {
-      throw new Error(`Migration ${filename} failed: ${error.message}`, { cause: error });
+      throw new Error(`Migration ${filename} failed: ${error.message}; position=${error.position ?? "unknown"}; detail=${error.detail ?? ""}; query=${error.query ?? ""}`, { cause: error });
     }
   }
   const uid = "00000000-0000-4000-8000-000000000001", other = "00000000-0000-4000-8000-000000000002";
