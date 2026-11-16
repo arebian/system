@@ -46,7 +46,7 @@ const { chromium } = require('playwright');
    if (!(await page.locator('.quest-objectives-panel').count())) throw new Error('Objective panel did not render. Body: '+(await page.locator('body').innerText())+' Errors: '+errors.join(' | '));
    const generate=page.getByRole('button',{name:'GENERATE 3 OBJECTIVES'});
    await generate.waitFor({state:'visible'});await generate.click();
-   await page.getByText('FOCUSED MOVEMENT').waitFor();
+   await page.getByRole('heading',{name:'FOCUSED MOVEMENT'}).waitFor();
    assert.equal(await page.locator('.quest-objective-item').count(),3);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
    // Reject one proposal, then replace it without losing accepted objectives.
