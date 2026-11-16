@@ -662,7 +662,6 @@ export async function fetchQuestObjectiveTimer(objectiveId) {
     .from("user_quest_objective_timer_sessions")
     .select("id,objective_id,started_at,finished_at,elapsed_seconds,status")
     .eq("objective_id", objectiveId)
-    .eq("status", "RUNNING")
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
