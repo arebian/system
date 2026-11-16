@@ -47,3 +47,11 @@
 .quest-objective-actions button:last-child{border-color:var(--border-color,rgba(180,180,180,.3));opacity:.8}
 .quest-objectives-confirmed,.quest-objectives-message{display:block;margin-top:10px;font-size:11px;line-height:1.5;opacity:.8}
 .quest-objectives-message.is-error{color:#e06a6a}
+
+
+/* Multi-objective quest completion */
+.quest-objective-completion{display:grid;gap:8px;margin-top:12px}
+.quest-objective-completion textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:10px;background:rgba(0,0,0,.16);color:inherit;padding:10px;font:inherit;font-size:12px}
+.quest-objective-completion button{justify-self:start;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#101010;padding:9px 12px;font:inherit;font-size:10px;font-weight:800;letter-spacing:.08em}
+.quest-objective-completion button:disabled{opacity:.45;cursor:not-allowed}
+.quest-objective-completion small{font-size:10px;line-height:1.5;opacity:.7}
