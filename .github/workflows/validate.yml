@@ -69,5 +69,20 @@ jobs:
           echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Start local system API Edge Function
+        shell: bash
+        run: |
+          supabase functions serve system-api > "$RUNNER_TEMP/system-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/system-api.pid"
+          for attempt in $(seq 1 40); do
+            status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$API_URL/functions/v1/system-api" \
+              -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d '{"action":"health"}' || true)
+            if [ "$status" = "401" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -n 100 "$RUNNER_TEMP/system-api.log"
+          exit 1
       - name: Test authenticated profile and private proof flows
         run: npm run test:supabase:integration
