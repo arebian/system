@@ -55,3 +55,12 @@
 .quest-objective-completion button{justify-self:start;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#101010;padding:9px 12px;font:inherit;font-size:10px;font-weight:800;letter-spacing:.08em}
 .quest-objective-completion button:disabled{opacity:.45;cursor:not-allowed}
 .quest-objective-completion small{font-size:10px;line-height:1.5;opacity:.7}
+
+
+.quest-objective-review{display:grid;gap:7px;margin-top:10px;padding:10px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:10px;background:rgba(0,0,0,.12)}
+.quest-objective-review strong{font-size:10px;letter-spacing:.1em}
+.quest-objective-review span,.quest-objective-review small{font-size:11px;line-height:1.5;opacity:.82}
+.quest-objective-review.is-approve{border-color:rgba(90,190,130,.45)}
+.quest-objective-review.is-clarify{border-color:rgba(220,170,80,.45)}
+.quest-objective-review.is-incomplete{border-color:rgba(210,100,100,.4)}
+.quest-objective-review button{justify-self:start;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#101010;padding:9px 12px;font:inherit;font-size:10px;font-weight:800;letter-spacing:.08em}
