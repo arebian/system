@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchQuestTaskLibrary, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 
 export default function QuestObjectivesPanel({ userQuestId, identity, profile }) {
@@ -11,11 +11,17 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile })
 
   useEffect(() => {
     let active = true;
-    fetchQuestTaskLibrary()
-      .then(rows => { if (active) { setTasks(rows); setStatus("READY"); } })
+    Promise.all([fetchQuestTaskLibrary(), fetchQuestObjectives(userQuestId)])
+      .then(([rows, saved]) => {
+        if (active) {
+          setTasks(rows);
+          setObjectives(saved);
+          setStatus("READY");
+        }
+      })
       .catch(error => { if (active) { setStatus("ERROR"); setMessage(error?.message || "TASK_LIBRARY_UNAVAILABLE"); } });
     return () => { active = false; };
-  }, []);
+  }, [userQuestId]);
 
   const recommendations = useMemo(
     () => recommendQuestObjectives(tasks, identity, profile, 3),
