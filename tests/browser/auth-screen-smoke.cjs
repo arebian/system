@@ -40,7 +40,7 @@ const { chromium } = require("playwright");
       await page.getByRole("heading", {name:"Begin your progression."}).waitFor();
       await page.locator("#access-password").fill("short");
       await page.getByRole("button", {name:"CREATE MY ACCOUNT"}).click();
-      await page.getByRole("status").getByText(/at least 8 characters/i).waitFor();
+      assert.equal(await page.locator("#access-password").evaluate(input => input.validity.tooShort), true);
       await page.locator("#access-password").fill("strong-test-password");
       await page.getByRole("button", {name:"CREATE MY ACCOUNT"}).click();
       await page.getByRole("status").getByText(/Account created. Check your email/i).waitFor();
