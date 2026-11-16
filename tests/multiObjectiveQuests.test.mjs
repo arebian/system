@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
+import { recommendQuestObjectives, objectiveProposalSummary } from "../src/systemQuestObjectivesCore.js";
 
 test("multi-objective quests enforce proposals, replacement, timer proof, reviewed XP and parent completion", { timeout: 120000 }, async t => {
   const db = new PGlite();
@@ -117,4 +118,26 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
     from public.quest_library where code='QA_NO_ZERO_DAY' returning id`)).rows[0].id;
   await db.exec(`select set_config('request.jwt.claim.sub','${user}',false);`);
   await assert.rejects(db.query("select public.system_propose_quest_objectives($1,$2::uuid[],'{}')", [otherParent,initialIds]), /QUEST_NOT_FOUND/);
+});
+
+test("adaptive objective recommendations respect identity, balance, recency and three-task limit", () => {
+  const tasks = [
+    { id: "p1", title: "Move", pillar: "PHYSICAL", difficulty: "EASY", duration_minutes: 10, proof_type: "HONOR" },
+    { id: "i1", title: "Read", pillar: "INTELLECT", difficulty: "NORMAL", duration_minutes: 20, proof_type: "NOTE" },
+    { id: "d1", title: "Plan", pillar: "DISCIPLINE", difficulty: "HARD", duration_minutes: 5, proof_type: "NOTE" },
+    { id: "w1", title: "Build", pillar: "WEALTH", difficulty: "NORMAL", duration_minutes: 20, proof_type: "TIMER" },
+    { id: "s1", title: "Connect", pillar: "SOCIAL", difficulty: "NORMAL", duration_minutes: 5, proof_type: "HONOR" },
+  ];
+  const identity = { primary: "WEALTH", secondary: ["SOCIAL", "MENTAL"] };
+  const hard = recommendQuestObjectives(tasks, identity, { level: 8, recentCompletionRate: 92 }, 3);
+  assert.equal(hard.length, 3);
+  assert.deepEqual(new Set(hard.map(row => row.pillar)), new Set(["PHYSICAL", "INTELLECT", "WEALTH"]));
+  assert.ok(hard.some(row => row.difficulty === "HARD"), "high completion rate and level should adapt toward harder tasks");
+  const easy = recommendQuestObjectives(tasks, identity, { level: 2, recentCompletionRate: 30 }, 3);
+  assert.ok(easy.every(row => row.difficulty === "EASY" || row.difficulty === "NORMAL"));
+  const recent = [{ title: "Move", date: new Date().toISOString() }];
+  const withoutRepeat = recommendQuestObjectives(tasks, identity, { level: 2, recentCompletionRate: 50, questLog: recent }, 3);
+  assert.ok(!withoutRepeat.some(row => row.title === "Move"));
+  const summary = objectiveProposalSummary([{ status: "ACCEPTED" }, { status: "PROPOSED" }, { status: "COMPLETED" }]);
+  assert.deepEqual(summary, { total: 3, accepted: 1, proposed: 1, completed: 1, allAccepted: false });
 });
