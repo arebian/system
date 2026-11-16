@@ -650,6 +650,14 @@ export async function decideQuestObjectiveOnBackend({ objectiveId, decision }) {
   return response?.data || response;
 }
 
+export async function completeQuestObjectiveOnBackend({ objectiveId, completionNote }) {
+  const response = await invokeSystemApi("complete_quest_objective", {
+    objective_id: objectiveId,
+    completion_note: completionNote,
+  }, { idempotencyKey: `quest-objective-complete:${objectiveId}` });
+  return response?.data || response;
+}
+
 export async function systemApiHealth() {
   const response =
     await invokeSystemApi(
