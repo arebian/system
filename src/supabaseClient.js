@@ -14,9 +14,27 @@ const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
   DEFAULT_SUPABASE_URL;
 
+const configuredPublishableKey =
+  String(
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ""
+  ).trim();
+
+// A copied .env.example can leave the literal instructional placeholder
+// in the local environment. Vite treats it as configured and would otherwise
+// send "replace-with-your-development-publishable-key" to Supabase, causing
+// every Auth request to fail with UNAUTHORIZED_INVALID_API_KEY.
+// Ignore that placeholder for this hosted project and use its active,
+// public publishable key instead.
+const isPlaceholderPublishableKey =
+  !configuredPublishableKey ||
+  /^(replace-with|your[-_ ]|placeholder)/i.test(
+    configuredPublishableKey
+  );
+
 const supabasePublishableKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+  isPlaceholderPublishableKey
+    ? DEFAULT_SUPABASE_PUBLISHABLE_KEY
+    : configuredPublishableKey;
 
 export const supabase = createClient(
   supabaseUrl,
