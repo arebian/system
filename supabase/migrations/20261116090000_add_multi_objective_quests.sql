@@ -113,7 +113,7 @@ create or replace function public.system_propose_quest_objectives(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
@@ -177,7 +177,7 @@ create or replace function public.system_decide_quest_objective(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = ''
 as $$
 declare
   v_user uuid := auth.uid();
