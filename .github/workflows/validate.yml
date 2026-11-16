@@ -31,7 +31,7 @@ jobs:
       - name: Run full test suite
         run: npm test
       - name: Install Chromium for browser tests
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Test multi-objective quest player flow
         run: npm run test:browser:objectives
       - name: Build production bundle
