@@ -21,7 +21,7 @@ export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}
       : 2;
 
   const candidates = (tasks || []).filter(task =>
-    task?.id && task?.active !== false && ["HONOR","NOTE","TIMER"].includes(String(task.proof_type || "HONOR").toUpperCase()) && DIFFICULTY_RANK[String(task.difficulty).toUpperCase()]
+    task?.id && task?.active !== false && ["HONOR","NOTE","TIMER","PHOTO"].includes(String(task.proof_type || "HONOR").toUpperCase()) && DIFFICULTY_RANK[String(task.difficulty).toUpperCase()]
   );
 
   const chosen = [];
