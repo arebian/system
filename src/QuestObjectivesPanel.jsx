@@ -239,7 +239,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                         <button type="button" disabled={busy} onClick={() => startTimer(item.id)}>START {item.duration_minutes}-MIN VERIFIED TIMER</button>
                       )}
                       {timerSessions[item.id]?.status === "COMPLETED" && (
-                        <button type="button" disabled={busy || uploadingPhoto || String(completionNotes[item.id] || "").trim().length < 12 || (item.proof_type === "PHOTO" && !photoPaths[item.id])} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
+                        <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
                       )}
                       {reviewResults[item.id] && (
                         <div className={"quest-objective-review is-" + String(reviewResults[item.id].decision || "pending").toLowerCase()}>
@@ -272,7 +272,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                     maxLength={1200}
                     disabled={busy}
                   />
-                  <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => reviewObjective(item.id)}>
+                  <button type="button" disabled={busy || uploadingPhoto || String(completionNotes[item.id] || "").trim().length < 12 || (item.proof_type === "PHOTO" && !photoPaths[item.id])} onClick={() => reviewObjective(item.id)}>
                     {busy ? "REVIEWING…" : "SUBMIT EVIDENCE FOR AI REVIEW"}
                   </button>
                   {reviewResults[item.id] && (
