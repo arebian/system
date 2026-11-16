@@ -93,7 +93,7 @@ export async function handleLivingSystemAction({ action, payload, userId, client
         if (timerError || !timerSession || timerSession.status !== "COMPLETED" || !timerSession.finished_at) throw new PublicFailure("OBJECTIVE_TIMER_NOT_VERIFIED");
         if (Number(timerSession.elapsed_seconds || 0) < Number(objective.duration_minutes || 0) * 60) throw new PublicFailure("OBJECTIVE_TIMER_DURATION_NOT_MET");
         verifiedTimer = timerSession;
-        proof = { ...proof, type: "RESULT", detail: `Server-verified timer completed for ${timerSession.elapsed_seconds} seconds; required duration was ${Number(objective.duration_minutes) * 60} seconds.`, note: "Timer duration verified by the server." };
+        proof = { ...proof, type: "RESULT", detail: [proof.detail, `Server-verified timer completed for ${timerSession.elapsed_seconds} seconds; required duration was ${Number(objective.duration_minutes) * 60} seconds.`].filter(Boolean).join("\\n\\n"), note: "Timer duration verified by the server." };
       }
       const { data: parent, error: parentError } = await client.from("user_quests")
         .select("id,status,expires_at").eq("id", objective.user_quest_id).eq("user_id", userId).maybeSingle();
