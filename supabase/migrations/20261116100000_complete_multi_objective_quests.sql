@@ -93,7 +93,11 @@ begin
     from public.user_quest_objectives
     where user_quest_id=new.id and user_id=new.user_id;
 
-    if v_total > 0 and (v_total <> 3 or v_completed <> 3) then
+    if upper(trim(coalesce(new.title_snapshot,'')))='NO ZERO DAY' then
+      if v_total <> 3 or v_completed <> 3 then
+        raise exception 'QUEST_OBJECTIVES_INCOMPLETE';
+      end if;
+    elsif v_total > 0 and (v_total <> 3 or v_completed <> 3) then
       raise exception 'QUEST_OBJECTIVES_INCOMPLETE';
     end if;
   end if;
