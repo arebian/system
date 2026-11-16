@@ -153,11 +153,12 @@ begin
   end if;
   if exists (
     select 1 from public.user_quest_objectives
-    where user_quest_id=p_user_quest_id and status='ACCEPTED' and task_id=any(p_task_ids)
-  ) then raise exception 'DUPLICATE_OBJECTIVE'; end if;
+    where user_quest_id=p_user_quest_id and user_id=v_user and task_id=any(p_task_ids)
+  ) then raise exception 'TASK_ALREADY_USED_FOR_PARENT'; end if;
 
+  -- Keep rejected proposals as history; only clear proposals being replaced.
   delete from public.user_quest_objectives
-  where user_quest_id=p_user_quest_id and user_id=v_user and status in ('PROPOSED','REJECTED');
+  where user_quest_id=p_user_quest_id and user_id=v_user and status='PROPOSED';
 
   foreach v_id in array p_task_ids loop
     select * into v_task from public.quest_task_library
