@@ -196,6 +196,14 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                 <div className="quest-objective-completion">
                   {item.proof_type === "TIMER" ? (
                     <div className="quest-objective-timer">
+                      <textarea
+                        value={completionNotes[item.id] || ""}
+                        onChange={event => { setCompletionNotes(current => ({ ...current, [item.id]: event.target.value })); setReviewResults(current => ({ ...current, [item.id]: null })); }}
+                        placeholder="What did you work on, and what did you achieve during the timer?"
+                        rows={2}
+                        maxLength={1200}
+                        disabled={busy}
+                      />
                       {timerSessions[item.id]?.status === "COMPLETED" ? (
                         <small>SERVER TIMER VERIFIED · {Math.floor((timerSessions[item.id].elapsed_seconds || 0) / 60)} MIN</small>
                       ) : timerSessions[item.id]?.status === "RUNNING" ? (
@@ -207,8 +215,22 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                         <button type="button" disabled={busy} onClick={() => startTimer(item.id)}>START {item.duration_minutes}-MIN VERIFIED TIMER</button>
                       )}
                       {timerSessions[item.id]?.status === "COMPLETED" && (
-                        <button type="button" disabled={busy} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
+                        <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
                       )}
+                      {reviewResults[item.id] && (
+                        <div className={"quest-objective-review is-" + String(reviewResults[item.id].decision || "pending").toLowerCase()}>
+                          <strong>{reviewResults[item.id].decision} // SYSTEM REVIEW</strong>
+                          <span>{reviewResults[item.id].reason}</span>
+                          {reviewResults[item.id].question && <span>{reviewResults[item.id].question}</span>}
+                          {Array.isArray(reviewResults[item.id].missing) && reviewResults[item.id].missing.length > 0 && <small>STILL NEEDED: {reviewResults[item.id].missing.join(" · ")}</small>}
+                          {reviewResults[item.id].decision === "APPROVE" && (
+                            <button type="button" disabled={busy} onClick={() => completeObjective(item.id)}>
+                              {busy ? "CLAIMING…" : "CONFIRM & CLAIM +" + item.xp_reward + " XP"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <small>Timer duration is verified by the server; AI separately reviews the work you describe.</small>
                     </div>
                   ) : (
                   <>
