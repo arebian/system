@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
@@ -75,6 +75,25 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
       setMessage(error?.message || "OBJECTIVE_PROPOSAL_FAILED");
     } finally { setBusy(false); }
   }, [userQuestId, recommendations, recommendationLimit, busy]);
+
+  // First-time NO ZERO DAY setup: generate the initial three recommendations
+  // automatically once the task library and saved objective state are loaded.
+  // Rejected proposals remain in history, so replacements stay player-initiated.
+  const autoGenerationAttemptedForRef = useRef("");
+  useEffect(() => {
+    if (
+      status !== "READY" ||
+      !userQuestId ||
+      objectives.length !== 0 ||
+      recommendationLimit !== 3 ||
+      recommendations.length !== 3 ||
+      busy ||
+      autoGenerationAttemptedForRef.current === userQuestId
+    ) return;
+
+    autoGenerationAttemptedForRef.current = userQuestId;
+    void generate();
+  }, [status, userQuestId, objectives.length, recommendationLimit, recommendations, busy, generate]);
 
   const decide = useCallback(async (objectiveId, decision) => {
     if (busy) return;
@@ -198,7 +217,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
       <p>Three focused actions: physical development, intellectual development and a task aligned with your identity. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
         <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
-          {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING…" : "GENERATE 3 OBJECTIVES"}
+          {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING THREE OBJECTIVES…" : "RETRY GENERATING 3 OBJECTIVES"}
         </button>
       ) : (
         <div className="quest-objectives-list">
