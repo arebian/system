@@ -67,7 +67,7 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       if (saveError) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
       return { status: 200, body: { data } };
     }
-    const proof = normalizeReviewProof(payload.proof);
+    let proof = normalizeReviewProof(payload.proof);
     let snapshot: any;
     if (action === "review_quest") {
       if (!String(payload.title || "").trim() || String(payload.title).length > 160) throw new PublicFailure("QUEST_TITLE_INVALID");
@@ -81,7 +81,20 @@ export async function handleLivingSystemAction({ action, payload, userId, client
         .eq("id", objectiveId).eq("user_id", userId).maybeSingle();
       if (objectiveError || !objective) throw new PublicFailure("OBJECTIVE_NOT_FOUND", 404);
       if (objective.status !== "ACCEPTED") throw new PublicFailure("OBJECTIVE_NOT_ACCEPTED");
-      if (["TIMER","PHOTO"].includes(String(objective.proof_type || "").toUpperCase())) throw new PublicFailure("QUEST_SERVER_ACTIVITY_REQUIRED");
+      const objectiveProofType = String(objective.proof_type || "").toUpperCase();
+      if (objectiveProofType === "PHOTO") throw new PublicFailure("QUEST_SERVER_ACTIVITY_REQUIRED");
+      let verifiedTimer: any = null;
+      if (objectiveProofType === "TIMER") {
+        const timerSessionId = String(payload.timer_session_id || "").trim();
+        if (!/^[a-f0-9-]{36}$/i.test(timerSessionId)) throw new PublicFailure("OBJECTIVE_TIMER_REQUIRED");
+        const { data: timerSession, error: timerError } = await client.from("user_quest_objective_timer_sessions")
+          .select("id,objective_id,user_id,started_at,finished_at,elapsed_seconds,status")
+          .eq("id", timerSessionId).eq("objective_id", objectiveId).eq("user_id", userId).maybeSingle();
+        if (timerError || !timerSession || timerSession.status !== "COMPLETED" || !timerSession.finished_at) throw new PublicFailure("OBJECTIVE_TIMER_NOT_VERIFIED");
+        if (Number(timerSession.elapsed_seconds || 0) < Number(objective.duration_minutes || 0) * 60) throw new PublicFailure("OBJECTIVE_TIMER_DURATION_NOT_MET");
+        verifiedTimer = timerSession;
+        proof = { ...proof, type: "RESULT", detail: `Server-verified timer completed for ${timerSession.elapsed_seconds} seconds; required duration was ${Number(objective.duration_minutes) * 60} seconds.`, note: "Timer duration verified by the server." };
+      }
       const { data: parent, error: parentError } = await client.from("user_quests")
         .select("id,status,expires_at").eq("id", objective.user_quest_id).eq("user_id", userId).maybeSingle();
       if (parentError || !parent) throw new PublicFailure("QUEST_NOT_FOUND", 404);
@@ -89,7 +102,8 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       snapshot = {
         kind: "QUEST_OBJECTIVE", target_id: objective.id, title: objective.title_snapshot,
         objective: objective.objective_snapshot, pillar: objective.pillar, difficulty: objective.difficulty,
-        duration_minutes: objective.duration_minutes, proof_policy: String(objective.proof_type || "NOTE").toUpperCase() === "HONOR" ? "HONOR" : "RESULT",
+        duration_minutes: objective.duration_minutes, proof_policy: objectiveProofType === "HONOR" ? "HONOR" : "RESULT",
+        verified_timer: verifiedTimer ? { elapsed_seconds: verifiedTimer.elapsed_seconds, started_at: verifiedTimer.started_at, finished_at: verifiedTimer.finished_at } : null,
       };
     } else if (action === "review_weekly_boss") {
       const state = await rpc(client, "system_weekly_boss_status_v1");
