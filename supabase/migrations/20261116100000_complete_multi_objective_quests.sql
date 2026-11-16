@@ -91,7 +91,8 @@ begin
     select count(*),count(*) filter (where status='COMPLETED')
       into v_total,v_completed
     from public.user_quest_objectives
-    where user_quest_id=new.id and user_id=new.user_id;
+    where user_quest_id=new.id and user_id=new.user_id
+      and status in ('ACCEPTED','COMPLETED');
 
     if upper(trim(coalesce(new.title_snapshot,'')))='NO ZERO DAY' then
       if v_total <> 3 or v_completed <> 3 then
