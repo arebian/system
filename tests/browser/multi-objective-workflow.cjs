@@ -44,8 +44,8 @@ const { chromium } = require('playwright');
    await page.goto('http://127.0.0.1:5187/tests/browser/objective-harness.html');
    await page.waitForTimeout(1000);
    if (!(await page.locator('.quest-objectives-panel').count())) throw new Error('Objective panel did not render. Body: '+(await page.locator('body').innerText())+' Errors: '+errors.join(' | '));
-   const generate=page.getByRole('button',{name:'GENERATE 3 OBJECTIVES'});
-   await generate.waitFor({state:'visible'});await generate.click();
+   // The first three recommendations should appear automatically after the
+   // initial quest and task library are loaded; no manual generate click.
    await page.getByRole('heading',{name:'FOCUSED MOVEMENT'}).waitFor();
    assert.equal(await page.locator('.quest-objective-item').count(),3);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow');
