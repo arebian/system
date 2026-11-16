@@ -54,7 +54,7 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
   await db.query("select public.system_decide_quest_objective($1,'REJECT')", [rejected.id]);
   await db.query("select public.system_decide_quest_objective($1,'ACCEPT')", [rows[1].id]);
   await db.query("select public.system_decide_quest_objective($1,'ACCEPT')", [rows[2].id]);
-  await assert.rejects(propose([rejected.task_id]), /OBJECTIVE_COUNT_MUST_FILL_OPEN_SLOTS/);
+  await assert.rejects(propose([rejected.task_id]), /TASK_ALREADY_USED_FOR_PARENT/);
   const replacement = (await propose([photoTask])).rows[0].value.objectives;
   assert.equal(replacement.length, 3, "replacement should preserve the two accepted objectives");
   assert.equal(replacement.filter(row => row.status === "ACCEPTED").length, 2);
@@ -126,6 +126,7 @@ test("adaptive objective recommendations respect identity, balance, recency and 
     { id: "i1", title: "Read", pillar: "INTELLECT", difficulty: "NORMAL", duration_minutes: 20, proof_type: "NOTE" },
     { id: "d1", title: "Plan", pillar: "DISCIPLINE", difficulty: "HARD", duration_minutes: 5, proof_type: "NOTE" },
     { id: "w1", title: "Build", pillar: "WEALTH", difficulty: "NORMAL", duration_minutes: 20, proof_type: "TIMER" },
+    { id: "w2", title: "Scale", pillar: "WEALTH", difficulty: "HARD", duration_minutes: 35, proof_type: "TIMER" },
     { id: "s1", title: "Connect", pillar: "SOCIAL", difficulty: "NORMAL", duration_minutes: 5, proof_type: "HONOR" },
   ];
   const identity = { primary: "WEALTH", secondary: ["SOCIAL", "MENTAL"] };
