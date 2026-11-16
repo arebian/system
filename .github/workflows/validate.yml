@@ -75,8 +75,8 @@ jobs:
           supabase functions serve system-api > "$RUNNER_TEMP/system-api.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/system-api.pid"
           for attempt in $(seq 1 40); do
-            status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$API_URL/functions/v1/system-api" \
-              -H "apikey: $ANON_KEY" -H "Content-Type: application/json" -d '{"action":"health"}' || true)
+            status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL/functions/v1/system-api" \
+              -H "apikey: $SUPABASE_ANON_KEY" -H "Content-Type: application/json" -d '{"action":"health"}' || true)
             if [ "$status" = "401" ]; then
               exit 0
             fi
