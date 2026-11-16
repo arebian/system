@@ -625,9 +625,8 @@ export async function fetchQuestTaskLibrary() {
 export async function fetchQuestObjectives(userQuestId) {
   const { data, error } = await supabase
     .from("user_quest_objectives")
-    .select("id,user_quest_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,xp_reward,proof_type,status,recommendation_reason")
+    .select("id,user_quest_id,task_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,xp_reward,proof_type,status,recommendation_reason")
     .eq("user_quest_id", userQuestId)
-    .neq("status", "REJECTED")
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data || [];
