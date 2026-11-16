@@ -611,6 +611,80 @@ export async function bootstrapAuthoritativeProfile() {
   return legacy;
 }
 
+export async function fetchQuestTaskLibrary() {
+  const { data, error } = await supabase
+    .from("quest_task_library")
+    .select("id,code,title,objective,pillar,difficulty,duration_minutes,min_level,xp_reward,proof_type,safety_notes")
+    .eq("active", true)
+    .order("pillar", { ascending: true })
+    .order("min_level", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchQuestObjectives(userQuestId) {
+  const { data, error } = await supabase
+    .from("user_quest_objectives")
+    .select("id,user_quest_id,task_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,xp_reward,proof_type,status,recommendation_reason")
+    .eq("user_quest_id", userQuestId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function proposeQuestObjectivesOnBackend({ userQuestId, taskIds, reasons = [] }) {
+  const response = await invokeSystemApi("propose_quest_objectives", {
+    user_quest_id: userQuestId,
+    task_ids: taskIds,
+    reasons,
+  }, { idempotencyKey: `quest-objectives-propose:${userQuestId}:${Date.now()}:${taskIds.join(",")}` });
+  return response?.data || response;
+}
+
+export async function decideQuestObjectiveOnBackend({ objectiveId, decision }) {
+  const response = await invokeSystemApi("decide_quest_objective", {
+    objective_id: objectiveId,
+    decision,
+  }, { idempotencyKey: `quest-objective-decision:${objectiveId}:${decision}` });
+  return response?.data || response;
+}
+
+export async function completeQuestObjectiveOnBackend({ objectiveId, reviewId }) {
+  const response = await invokeSystemApi("complete_quest_objective", {
+    objective_id: objectiveId,
+    review_id: reviewId,
+  }, { idempotencyKey: `quest-objective-complete:${objectiveId}:${Date.now()}` });
+  return response?.data || response;
+}
+
+export async function fetchQuestObjectiveTimer(objectiveId) {
+  const { data, error } = await supabase
+    .from("user_quest_objective_timer_sessions")
+    .select("id,objective_id,started_at,finished_at,elapsed_seconds,status")
+    .eq("objective_id", objectiveId)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+export async function startQuestObjectiveTimer(objectiveId) {
+  const { data, error } = await supabase.rpc("system_start_quest_objective_timer", {
+    p_objective_id: objectiveId,
+  });
+  if (error) throw error;
+  return data?.session || null;
+}
+
+export async function finishQuestObjectiveTimer(sessionId) {
+  const { data, error } = await supabase.rpc("system_finish_quest_objective_timer", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return data || null;
+}
+
 export async function systemApiHealth() {
   const response =
     await invokeSystemApi(
@@ -824,6 +898,8 @@ export async function initializeProfileOnBackend(profile) {
           sleepSchedule:
             profile?.sleepSchedule ||
             null,
+          identity:
+            profile?.identity || null,
         },
       }
     );

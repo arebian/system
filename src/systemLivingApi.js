@@ -7,6 +7,9 @@ const messages = {
   REVIEW_ATTACHMENT_INVALID: "That attachment could not be verified. Select your original file and retry.",
   REVIEW_IMAGE_FORMAT_UNSUPPORTED: "Photo review supports JPG, PNG and WebP images. Please select one of those formats.",
   QUEST_SERVER_ACTIVITY_REQUIRED: "This quest needs its server-verified timer or GPS activity. A written explanation cannot replace that requirement.",
+  OBJECTIVE_TIMER_REQUIRED: "Start and complete the objective timer before submitting this proof.",
+  OBJECTIVE_TIMER_NOT_VERIFIED: "The System could not verify a completed timer for this objective.",
+  OBJECTIVE_TIMER_DURATION_NOT_MET: "The server-verified timer did not reach the required duration.",
   WEEKLY_PLAN_EXPIRED: "This plan has expired. Adjust your situation to prepare a fresh one.",
   ACTIVE_BOSS_EXISTS: "An active boss already exists. Refresh its status to continue that mission.",
   WEEKLY_COOLDOWN: "Your next weekly boss opens seven days after the previous assignment.",
@@ -39,4 +42,17 @@ export async function livingSystemAction(action, payload = {}) {
 
 export async function reviewQuestOnBackend({ title, assignedFor, proof }) {
   return livingSystemAction("review_quest", { title, assigned_for: assignedFor, proof });
+}
+
+export async function reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId = null, imagePath = null }) {
+  return livingSystemAction("review_quest_objective", {
+    objective_id: objectiveId,
+    timer_session_id: timerSessionId,
+    proof: {
+      type: "RESULT",
+      detail: String(evidence || "").trim().slice(0, 5000),
+      note: String(evidence || "").trim().slice(0, 1000),
+      imagePath: String(imagePath || ""),
+    },
+  });
 }

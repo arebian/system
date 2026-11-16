@@ -1,7 +1,7 @@
 import { normalizeReviewProof, REVIEW_INSTRUCTIONS, REVIEW_SCHEMA, guardReviewDecision, responseText } from "./questReviewCore.js";
 import { buildWeeklyPlan } from "./weeklyBossCore.js";
 
-export const LIVING_ACTIONS = new Set(["review_quest", "weekly_boss_status", "prepare_weekly_boss", "accept_weekly_boss", "review_weekly_boss", "complete_weekly_boss", "weekly_boss_checkpoint", "retire_weekly_boss"]);
+export const LIVING_ACTIONS = new Set(["review_quest", "review_quest_objective", "weekly_boss_status", "prepare_weekly_boss", "accept_weekly_boss", "review_weekly_boss", "complete_weekly_boss", "weekly_boss_checkpoint", "retire_weekly_boss"]);
 
 class PublicFailure extends Error {
   constructor(public code: string, public status = 400) { super(code); }
@@ -11,7 +11,7 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
   const { data, error } = await client.rpc(name, args);
   if (error) {
     if (["PGRST202", "42P01", "42883"].includes(error.code)) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
-    const allowed = /^(AUTH_REQUIRED|PROFILE_NOT_READY|QUEST_[A-Z_]+|REVIEW_[A-Z_]+|WEEKLY_[A-Z_]+|RAID_KEY_REQUIRED|ACTIVE_BOSS_EXISTS)$/;
+    const allowed = /^(AUTH_REQUIRED|PROFILE_NOT_READY|QUEST_[A-Z_]+|OBJECTIVE_[A-Z_]+|REVIEW_[A-Z_]+|WEEKLY_[A-Z_]+|RAID_KEY_REQUIRED|ACTIVE_BOSS_EXISTS)$/;
     throw new PublicFailure(allowed.test(error.message) ? error.message : "SYSTEM_ACTION_FAILED");
   }
   return data;
@@ -67,12 +67,43 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       if (saveError) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
       return { status: 200, body: { data } };
     }
-    const proof = normalizeReviewProof(payload.proof);
+    let proof = normalizeReviewProof(payload.proof);
     let snapshot: any;
     if (action === "review_quest") {
       if (!String(payload.title || "").trim() || String(payload.title).length > 160) throw new PublicFailure("QUEST_TITLE_INVALID");
       snapshot = await rpc(client, "system_quest_review_context_v1", { p_title: payload.title, p_assigned_for: payload.assigned_for || null });
       if (["TIME", "GPS"].includes(snapshot.proof_policy)) throw new PublicFailure("QUEST_SERVER_ACTIVITY_REQUIRED");
+    } else if (action === "review_quest_objective") {
+      const objectiveId = String(payload.objective_id || "").trim();
+      if (!/^[a-f0-9-]{36}$/i.test(objectiveId)) throw new PublicFailure("OBJECTIVE_ID_INVALID");
+      const { data: objective, error: objectiveError } = await client.from("user_quest_objectives")
+        .select("id,user_id,user_quest_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,proof_type,status")
+        .eq("id", objectiveId).eq("user_id", userId).maybeSingle();
+      if (objectiveError || !objective) throw new PublicFailure("OBJECTIVE_NOT_FOUND", 404);
+      if (objective.status !== "ACCEPTED") throw new PublicFailure("OBJECTIVE_NOT_ACCEPTED");
+      const objectiveProofType = String(objective.proof_type || "").toUpperCase();
+      let verifiedTimer: any = null;
+      if (objectiveProofType === "TIMER") {
+        const timerSessionId = String(payload.timer_session_id || "").trim();
+        if (!/^[a-f0-9-]{36}$/i.test(timerSessionId)) throw new PublicFailure("OBJECTIVE_TIMER_REQUIRED");
+        const { data: timerSession, error: timerError } = await client.from("user_quest_objective_timer_sessions")
+          .select("id,objective_id,user_id,started_at,finished_at,elapsed_seconds,status")
+          .eq("id", timerSessionId).eq("objective_id", objectiveId).eq("user_id", userId).maybeSingle();
+        if (timerError || !timerSession || timerSession.status !== "COMPLETED" || !timerSession.finished_at) throw new PublicFailure("OBJECTIVE_TIMER_NOT_VERIFIED");
+        if (Number(timerSession.elapsed_seconds || 0) < Number(objective.duration_minutes || 0) * 60) throw new PublicFailure("OBJECTIVE_TIMER_DURATION_NOT_MET");
+        verifiedTimer = timerSession;
+        proof = { ...proof, type: "RESULT", detail: [proof.detail, `Server-verified timer completed for ${timerSession.elapsed_seconds} seconds; required duration was ${Number(objective.duration_minutes) * 60} seconds.`].filter(Boolean).join("\\n\\n"), note: "Timer duration verified by the server." };
+      }
+      const { data: parent, error: parentError } = await client.from("user_quests")
+        .select("id,status,expires_at").eq("id", objective.user_quest_id).eq("user_id", userId).maybeSingle();
+      if (parentError || !parent) throw new PublicFailure("QUEST_NOT_FOUND", 404);
+      if (!["ASSIGNED", "ACCEPTED"].includes(parent.status) || (parent.expires_at && new Date(parent.expires_at).getTime() < Date.now())) throw new PublicFailure("QUEST_NOT_OPEN");
+      snapshot = {
+        kind: "QUEST_OBJECTIVE", target_id: objective.id, title: objective.title_snapshot,
+        objective: objective.objective_snapshot, pillar: objective.pillar, difficulty: objective.difficulty,
+        duration_minutes: objective.duration_minutes, proof_policy: objectiveProofType === "HONOR" ? "HONOR" : objectiveProofType === "PHOTO" ? "PHOTO" : "RESULT",
+        verified_timer: verifiedTimer ? { elapsed_seconds: verifiedTimer.elapsed_seconds, started_at: verifiedTimer.started_at, finished_at: verifiedTimer.finished_at } : null,
+      };
     } else if (action === "review_weekly_boss") {
       const state = await rpc(client, "system_weekly_boss_status_v1");
       const boss = state.active;
@@ -96,7 +127,7 @@ export async function handleLivingSystemAction({ action, payload, userId, client
     if (snapshot.proof_policy === "PHOTO" && !imageUrl) throw new PublicFailure("REVIEW_IMAGE_FORMAT_UNSUPPORTED");
     const review = await reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher });
     const { data, error } = await admin.from("system_quest_reviews").insert({
-      user_id: userId, target_type: action === "review_quest" ? "QUEST" : "BOSS", target_id: snapshot.target_id,
+      user_id: userId, target_type: action === "review_quest" ? "QUEST" : action === "review_weekly_boss" ? "BOSS" : "OBJECTIVE", target_id: snapshot.target_id,
       assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model,
     }).select("id,decision,reason,question,missing,expires_at").single();
     if (error) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);

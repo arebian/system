@@ -1,0 +1,90 @@
+name: Validate THE SYSTEM
+
+on:
+  push:
+    branches:
+      - feature/identity-quest-engine
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run full test suite
+        run: npm test
+      - name: Install Chromium for browser tests
+        run: npx playwright install chromium
+      - name: Test multi-objective quest player flow
+        run: npm run test:browser:objectives
+      - name: Test responsive player sign-in and registration
+        run: npm run test:browser:auth
+      - name: Build production bundle
+        run: npm run build
+
+  local-supabase-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Start isolated local Supabase
+        run: |
+          supabase start > "$RUNNER_TEMP/supabase-start.log" 2>&1 || {
+            tail -n 80 "$RUNNER_TEMP/supabase-start.log"
+            exit 1
+          }
+      - name: Apply repository migrations to local database
+        run: supabase db reset
+      - name: Export local Supabase test credentials
+        shell: bash
+        run: |
+          eval "$(supabase status -o env)"
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+      - name: Start local system API Edge Function
+        shell: bash
+        run: |
+          supabase functions serve system-api > "$RUNNER_TEMP/system-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/system-api.pid"
+          for attempt in $(seq 1 40); do
+            status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL/functions/v1/system-api" \
+              -H "apikey: $SUPABASE_ANON_KEY" -H "Content-Type: application/json" -d '{"action":"health"}' || true)
+            if [ "$status" = "401" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -n 100 "$RUNNER_TEMP/system-api.log"
+          exit 1
+      - name: Test authenticated profile and private proof flows
+        run: npm run test:supabase:integration

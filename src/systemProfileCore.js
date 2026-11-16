@@ -1,6 +1,7 @@
 import { buildFoundationProfileData } from "./systemFoundationScan.js";
 import { normalizeFuelState } from "./systemFuel.js";
 import { createClassAttributeBaseline } from "./systemAttributesCore.js";
+import { normalizeIdentity } from "./systemIdentityCore.js";
 
 export const PATHS = {
   ASSASSIN: {
@@ -155,6 +156,8 @@ export function normalizeProfile(profile) {
         : "UNSPECIFIED",
 
     path,
+
+    identity: normalizeIdentity(profile?.identity),
 
     fingerprint:
       profile?.fingerprint ||

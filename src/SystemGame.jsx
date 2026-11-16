@@ -13,6 +13,7 @@ import { CLASS_TRACKS, createClassSoundtrack, soundtrackVolume } from "./systemM
 import { effectiveAttributes } from "./systemEquipmentCore.js";
 import { achievementEvents, appendAchievements } from "./systemAchievementCore.js";
 import WeeklyBoss from "./WeeklyBoss.jsx";
+import QuestObjectivesPanel from "./QuestObjectivesPanel.jsx";
 import { reviewQuestOnBackend } from "./systemLivingApi.js";
 import { canReuseApprovedReview } from "./systemReviewCore.js";
 import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
@@ -4496,12 +4497,7 @@ export function QuestPage({
       id: "discipline",
       type:
         "DISCIPLINE",
-      ...pick(
-        MUST_DISCIPLINE,
-        date +
-          profile.path +
-          "must1"
-      ),
+      ...MUST_DISCIPLINE[0],
     },
     {
       id: "physical",
@@ -6287,8 +6283,8 @@ export function QuestPage({
               profile.mustState[key];
 
             return (
+              <React.Fragment key={quest.id}>
               <MustCard
-                key={quest.id}
                 quest={quest}
                 state={state}
                 syncStatus={
@@ -6332,6 +6328,15 @@ export function QuestPage({
                   )
                 }
               />
+              {state?.backendQuestId && quest.name === "NO ZERO DAY" && (
+                <QuestObjectivesPanel
+                  userQuestId={state.backendQuestId}
+                  identity={profile.identity}
+                  profile={profile}
+                  onProfileUpdated={applyAuthoritativeProfile}
+                />
+              )}
+              </React.Fragment>
             );
           }
         )}
