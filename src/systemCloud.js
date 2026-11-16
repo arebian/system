@@ -650,10 +650,10 @@ export async function decideQuestObjectiveOnBackend({ objectiveId, decision }) {
   return response?.data || response;
 }
 
-export async function completeQuestObjectiveOnBackend({ objectiveId, completionNote }) {
+export async function completeQuestObjectiveOnBackend({ objectiveId, reviewId }) {
   const response = await invokeSystemApi("complete_quest_objective", {
     objective_id: objectiveId,
-    completion_note: completionNote,
+    review_id: reviewId,
   }, { idempotencyKey: `quest-objective-complete:${objectiveId}:${Date.now()}` });
   return response?.data || response;
 }
