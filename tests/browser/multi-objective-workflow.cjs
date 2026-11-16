@@ -18,7 +18,7 @@ const { chromium } = require('playwright');
  ];
  export async function fetchQuestTaskLibrary(){return tasks;}
  export async function fetchQuestObjectives(){return rows;}
- export async function proposeQuestObjectivesOnBackend({taskIds}){rows=taskIds.map((id,i)=>{const t=tasks.find(x=>x.id===id);return {id:'objective-'+id,task_id:id,pillar:t.pillar,title_snapshot:t.title,objective_snapshot:t.objective,difficulty:t.difficulty,duration_minutes:t.duration_minutes,xp_reward:t.xp_reward,proof_type:t.proof_type,status:'PROPOSED'};});return {objectives:rows};}
+ export async function proposeQuestObjectivesOnBackend({taskIds}){const proposed=taskIds.map(id=>{const t=tasks.find(x=>x.id===id);return {id:'objective-'+id,task_id:id,pillar:t.pillar,title_snapshot:t.title,objective_snapshot:t.objective,difficulty:t.difficulty,duration_minutes:t.duration_minutes,xp_reward:t.xp_reward,proof_type:t.proof_type,status:'PROPOSED'};});rows=[...rows.filter(x=>x.status==='ACCEPTED'||x.status==='COMPLETED'),...proposed];return {objectives:rows};}
  export async function decideQuestObjectiveOnBackend({objectiveId,decision}){const status=decision==='ACCEPT'?'ACCEPTED':'REJECTED';rows=rows.map(x=>x.id===objectiveId?{...x,status}:x);return {status};}
  export async function fetchQuestObjectiveTimer(id){return window.qaTimers?.[id]||null;}
  export async function startQuestObjectiveTimer(id){const item=rows.find(x=>x.id===id);const session={id:'timer-'+id,objective_id:id,status:'RUNNING',started_at:new Date(Date.now()-item.duration_minutes*60000-2000).toISOString(),elapsed_seconds:0};window.qaTimers={...(window.qaTimers||{}),[id]:session};return session;}
