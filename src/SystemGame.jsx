@@ -6333,6 +6333,7 @@ export function QuestPage({
                   userQuestId={state.backendQuestId}
                   identity={profile.identity}
                   profile={profile}
+                  onProfileUpdated={applyAuthoritativeProfile}
                 />
               )}
               </React.Fragment>
