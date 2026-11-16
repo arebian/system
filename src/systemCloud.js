@@ -611,6 +611,34 @@ export async function bootstrapAuthoritativeProfile() {
   return legacy;
 }
 
+export async function fetchQuestTaskLibrary() {
+  const { data, error } = await supabase
+    .from("quest_task_library")
+    .select("id,code,title,objective,pillar,difficulty,duration_minutes,min_level,xp_reward,proof_type,safety_notes")
+    .eq("active", true)
+    .order("pillar", { ascending: true })
+    .order("min_level", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function proposeQuestObjectivesOnBackend({ userQuestId, taskIds, reasons = [] }) {
+  const response = await invokeSystemApi("propose_quest_objectives", {
+    user_quest_id: userQuestId,
+    task_ids: taskIds,
+    reasons,
+  }, { idempotencyKey: `quest-objectives-propose:${userQuestId}:${taskIds.join(",")}` });
+  return response?.data || response;
+}
+
+export async function decideQuestObjectiveOnBackend({ objectiveId, decision }) {
+  const response = await invokeSystemApi("decide_quest_objective", {
+    objective_id: objectiveId,
+    decision,
+  }, { idempotencyKey: `quest-objective-decision:${objectiveId}:${decision}` });
+  return response?.data || response;
+}
+
 export async function systemApiHealth() {
   const response =
     await invokeSystemApi(
