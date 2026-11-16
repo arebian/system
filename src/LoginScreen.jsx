@@ -6,6 +6,7 @@ import { reportSystemError } from "./systemErrorReporter.js";
 import { withAppTimeout } from "./systemRequest.js";
 import { isFoundationScanReady, foundationHeightToCm, getFoundationFuelRecommendation, getFoundationClassSuggestions, buildFoundationProfileData, getFoundationOpeningPlan, FOUNDATION_FOCUS_OPTIONS, FOUNDATION_EXPERIENCE_OPTIONS, FOUNDATION_ACTIVITY_OPTIONS, FOUNDATION_TIME_OPTIONS, FOUNDATION_MEAL_OPTIONS, FOUNDATION_OBSTACLE_OPTIONS, FOUNDATION_FOOD_PREFERENCE_OPTIONS, FOUNDATION_FOOD_BUDGET_OPTIONS, FOUNDATION_EQUIPMENT_OPTIONS } from "./systemFoundationScan.js";
 import { FUEL_GOALS } from "./systemFuel.js";
+import { SYSTEM_IDENTITY_PILLARS, normalizeIdentity } from "./systemIdentityCore.js";
 import { normalizeProfile, createFingerprint, PATHS } from "./systemProfileCore.js";
 import { syncProfileToCloud } from "./systemProfileApi.js";
 
@@ -26,6 +27,8 @@ export function LoginScreen({
 
   const [stage, setStage] =
     useState("IDENTITY");
+  const [primaryPillar, setPrimaryPillar] = useState("");
+  const [secondaryPillars, setSecondaryPillars] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const inFlight = useRef(false);
@@ -133,6 +136,7 @@ export function LoginScreen({
 
   const stageOrder = [
     "IDENTITY",
+    "ASPIRATION",
     "FOUNDATION",
     "ROUTINE",
     "FUEL",
@@ -145,8 +149,15 @@ export function LoginScreen({
 
   function moveToFoundation() {
     if (identityReady) {
-      setStage("FOUNDATION");
+      setStage("ASPIRATION");
     }
+  }
+
+  function toggleSecondaryPillar(value) {
+    if (value === primaryPillar) return;
+    setSecondaryPillars(current => current.includes(value)
+      ? current.filter(item => item !== value)
+      : current.length < 2 ? [...current, value] : current);
   }
 
   function moveToClass() {
@@ -207,6 +218,7 @@ export function LoginScreen({
         age: numericAge,
         gender,
         path,
+        identity: normalizeIdentity({ primary: primaryPillar, secondary: secondaryPillars }),
         fingerprint:
           createFingerprint(
             cleanName,
@@ -340,6 +352,57 @@ export function LoginScreen({
             >
               BEGIN FOUNDATION SCAN
             </button>
+          </section>
+        )}
+
+
+        {stage === "ASPIRATION" && (
+          <section className="foundation-stage">
+            <small>AWAKENING PROTOCOL · IDENTITY</small>
+            <h2>WHO DO YOU WANT TO BECOME?</h2>
+            <p className="login-help">
+              Choose one primary pillar and up to two supporting pillars. These guide your daily quest recommendations; your class remains a separate RPG specialization.
+            </p>
+            <label>PRIMARY IDENTITY · REQUIRED</label>
+            <div className="foundation-option-grid">
+              {SYSTEM_IDENTITY_PILLARS.map(item => (
+                <button
+                  type="button"
+                  key={item.value}
+                  className={primaryPillar === item.value ? "foundation-option selected" : "foundation-option"}
+                  aria-pressed={primaryPillar === item.value}
+                  onClick={() => {
+                    setPrimaryPillar(item.value);
+                    setSecondaryPillars(current => current.filter(value => value !== item.value));
+                  }}
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                  {primaryPillar === item.value && <em className="foundation-focus-state">✓ PRIMARY PILLAR</em>}
+                </button>
+              ))}
+            </div>
+            <label>SUPPORTING PILLARS · OPTIONAL · UP TO TWO</label>
+            <div className="foundation-option-grid">
+              {SYSTEM_IDENTITY_PILLARS.filter(item => item.value !== primaryPillar).map(item => (
+                <button
+                  type="button"
+                  key={item.value}
+                  className={secondaryPillars.includes(item.value) ? "foundation-option selected" : "foundation-option"}
+                  aria-pressed={secondaryPillars.includes(item.value)}
+                  disabled={!secondaryPillars.includes(item.value) && secondaryPillars.length >= 2}
+                  onClick={() => toggleSecondaryPillar(item.value)}
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                  {secondaryPillars.includes(item.value) && <em className="foundation-focus-state">✓ SUPPORTING PILLAR</em>}
+                </button>
+              ))}
+            </div>
+            <div className="foundation-actions">
+              <button type="button" className="foundation-back" disabled={saving} onClick={moveBack}>BACK</button>
+              <button type="button" className="initialize" disabled={!primaryPillar} onClick={() => setStage("FOUNDATION")}>CONTINUE TO FOUNDATION SCAN</button>
+            </div>
           </section>
         )}
 
