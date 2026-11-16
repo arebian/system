@@ -121,6 +121,8 @@ declare
   v_task public.quest_task_library;
   v_id uuid;
   v_count integer := 0;
+  v_accepted_count integer := 0;
+  v_completed_count integer := 0;
   v_result jsonb := '[]'::jsonb;
 begin
   if v_user is null then raise exception 'AUTH_REQUIRED'; end if;
@@ -136,13 +138,26 @@ begin
   if not found then raise exception 'QUEST_NOT_FOUND'; end if;
   if v_parent.status not in ('ASSIGNED','ACCEPTED') then raise exception 'QUEST_NOT_OPEN'; end if;
 
+  select
+    count(*) filter (where status='ACCEPTED'),
+    count(*) filter (where status='COMPLETED')
+  into v_accepted_count,v_completed_count
+  from public.user_quest_objectives
+  where user_quest_id=p_user_quest_id and user_id=v_user;
+
+  if v_completed_count > 0 or v_accepted_count >= 3 then
+    raise exception 'OBJECTIVES_ALREADY_STARTED';
+  end if;
+  if array_length(p_task_ids,1) <> 3-v_accepted_count then
+    raise exception 'OBJECTIVE_COUNT_MUST_FILL_OPEN_SLOTS';
+  end if;
   if exists (
     select 1 from public.user_quest_objectives
-    where user_quest_id=p_user_quest_id and status in ('ACCEPTED','COMPLETED')
-  ) then raise exception 'OBJECTIVES_ALREADY_STARTED'; end if;
+    where user_quest_id=p_user_quest_id and status='ACCEPTED' and task_id=any(p_task_ids)
+  ) then raise exception 'DUPLICATE_OBJECTIVE'; end if;
 
   delete from public.user_quest_objectives
-  where user_quest_id=p_user_quest_id and status in ('PROPOSED','REJECTED');
+  where user_quest_id=p_user_quest_id and user_id=v_user and status in ('PROPOSED','REJECTED');
 
   foreach v_id in array p_task_ids loop
     select * into v_task from public.quest_task_library
@@ -164,7 +179,7 @@ begin
 
   select coalesce(jsonb_agg(to_jsonb(o) order by o.created_at,o.id),'[]'::jsonb)
   into v_result from public.user_quest_objectives o
-  where o.user_quest_id=p_user_quest_id and o.status='PROPOSED';
+  where o.user_quest_id=p_user_quest_id and o.user_id=v_user and o.status<>'REJECTED';
 
   return jsonb_build_object('status','PROPOSED','objectives',v_result);
 end;
