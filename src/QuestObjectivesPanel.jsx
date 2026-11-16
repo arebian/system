@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
@@ -11,6 +11,8 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const [message, setMessage] = useState("");
   const [completionNotes, setCompletionNotes] = useState({});
   const [reviewResults, setReviewResults] = useState({});
+  const [timerSessions, setTimerSessions] = useState({});
+  const [clockNow, setClockNow] = useState(Date.now());
 
   useEffect(() => {
     let active = true;
@@ -25,6 +27,21 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
       .catch(error => { if (active) { setStatus("ERROR"); setMessage(error?.message || "TASK_LIBRARY_UNAVAILABLE"); } });
     return () => { active = false; };
   }, [userQuestId]);
+
+
+  useEffect(() => {
+    const timer = setInterval(() => setClockNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const pending = objectives.filter(item => item.status === "ACCEPTED" && item.proof_type === "TIMER");
+    Promise.all(pending.map(async item => [item.id, await fetchQuestObjectiveTimer(item.id)]))
+      .then(entries => { if (active) setTimerSessions(current => ({ ...current, ...Object.fromEntries(entries.filter(([,session]) => session)) })); })
+      .catch(error => { if (active) setMessage(error?.message || "OBJECTIVE_TIMER_LOAD_FAILED"); });
+    return () => { active = false; };
+  }, [objectives]);
 
   const lockedObjectives = objectives.filter(item => item.status === "ACCEPTED" || item.status === "COMPLETED");
   const recommendationLimit = Math.max(0, 3 - lockedObjectives.length);
@@ -71,15 +88,22 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   }, [busy]);
 
   const reviewObjective = useCallback(async (objectiveId) => {
+    const item = objectives.find(row => row.id === objectiveId);
+    const timerSession = timerSessions[objectiveId];
+    const isTimer = item?.proof_type === "TIMER";
     const evidence = String(completionNotes[objectiveId] || "").trim();
-    if (evidence.length < 12) {
+    if (isTimer && (!timerSession || timerSession.status !== "COMPLETED")) {
+      setMessage("Complete the server-verified timer before submitting this objective.");
+      return;
+    }
+    if (!isTimer && evidence.length < 12) {
       setMessage("Describe what you completed and the result (at least 12 characters).");
       return;
     }
     if (busy) return;
     setBusy(true); setMessage("");
     try {
-      const review = await reviewQuestObjectiveOnBackend({ objectiveId, evidence });
+      const review = await reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId: isTimer ? timerSession.id : null });
       setReviewResults(current => ({ ...current, [objectiveId]: review }));
       setMessage(review?.decision === "APPROVE"
         ? "Evidence approved. Review the assessment, then choose whether to claim the objective XP."
@@ -89,7 +113,34 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_REVIEW_FAILED");
     } finally { setBusy(false); }
-  }, [completionNotes, busy]);
+  }, [completionNotes, busy, objectives, timerSessions]);
+
+  const startTimer = useCallback(async (objectiveId) => {
+    if (busy) return;
+    setBusy(true); setMessage("");
+    try {
+      const session = await startQuestObjectiveTimer(objectiveId);
+      setTimerSessions(current => ({ ...current, [objectiveId]: session }));
+      setMessage("Verified timer started. Keep this objective open until the required duration is complete.");
+    } catch (error) { setMessage(error?.message || "OBJECTIVE_TIMER_START_FAILED"); }
+    finally { setBusy(false); }
+  }, [busy]);
+
+  const finishTimer = useCallback(async (objectiveId) => {
+    const session = timerSessions[objectiveId];
+    if (!session?.id || busy) return;
+    setBusy(true); setMessage("");
+    try {
+      const result = await finishQuestObjectiveTimer(session.id);
+      if (result?.status === "TOO_EARLY") {
+        setMessage("The required time has not elapsed yet. Keep the timer running.");
+      } else if (result?.session) {
+        setTimerSessions(current => ({ ...current, [objectiveId]: result.session }));
+        setMessage("Timer duration verified by the server. Submit it for AI review.");
+      }
+    } catch (error) { setMessage(error?.message || "OBJECTIVE_TIMER_FINISH_FAILED"); }
+    finally { setBusy(false); }
+  }, [timerSessions, busy]);
 
   const completeObjective = useCallback(async (objectiveId) => {
     const review = reviewResults[objectiveId];
@@ -143,6 +194,24 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
               )}
               {item.status === "ACCEPTED" && (
                 <div className="quest-objective-completion">
+                  {item.proof_type === "TIMER" ? (
+                    <div className="quest-objective-timer">
+                      {timerSessions[item.id]?.status === "COMPLETED" ? (
+                        <small>SERVER TIMER VERIFIED · {Math.floor((timerSessions[item.id].elapsed_seconds || 0) / 60)} MIN</small>
+                      ) : timerSessions[item.id]?.status === "RUNNING" ? (
+                        <>
+                          <strong>{(() => { const remaining = Math.max(0, item.duration_minutes * 60 - Math.floor((clockNow - new Date(timerSessions[item.id].started_at).getTime()) / 1000)); return String(Math.floor(remaining/60)).padStart(2,"0") + ":" + String(remaining%60).padStart(2,"0"); })()}</strong>
+                          <button type="button" disabled={busy || clockNow - new Date(timerSessions[item.id].started_at).getTime() < item.duration_minutes * 60000} onClick={() => finishTimer(item.id)}>VERIFY TIMER COMPLETION</button>
+                        </>
+                      ) : (
+                        <button type="button" disabled={busy} onClick={() => startTimer(item.id)}>START {item.duration_minutes}-MIN VERIFIED TIMER</button>
+                      )}
+                      {timerSessions[item.id]?.status === "COMPLETED" && (
+                        <button type="button" disabled={busy} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
+                      )}
+                    </div>
+                  ) : (
+                  <>
                   <textarea
                     value={completionNotes[item.id] || ""}
                     onChange={event => { setCompletionNotes(current => ({ ...current, [item.id]: event.target.value })); setReviewResults(current => ({ ...current, [item.id]: null })); }}
@@ -170,6 +239,8 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                     </div>
                   )}
                   <small>AI reviews your evidence and recommends a decision. XP is awarded only after an approved review and your explicit confirmation.</small>
+                  </>
+                  )}
                 </div>
               )}
               {item.status === "COMPLETED" && (
