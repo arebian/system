@@ -17,7 +17,13 @@ test("backend migration enforces review ownership, proof binding, idempotency an
     CREATE TABLE storage.objects(id uuid primary key DEFAULT gen_random_uuid(),bucket_id text,name text,owner uuid,owner_id text);
     CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$SELECT string_to_array($1,'/')$$;`);
   const directory = new URL("../supabase/migrations/", import.meta.url);
-  for (const filename of (await readdir(directory)).filter(n => n.endsWith(".sql")).sort()) await db.exec(await readFile(new URL(filename, directory), "utf8"));
+  for (const filename of (await readdir(directory)).filter(n => n.endsWith(".sql")).sort()) {
+    try {
+      await db.exec(await readFile(new URL(filename, directory), "utf8"));
+    } catch (error) {
+      throw new Error(`Migration ${filename} failed: ${error.message}`, { cause: error });
+    }
+  }
   const uid = "00000000-0000-4000-8000-000000000001", other = "00000000-0000-4000-8000-000000000002";
   await db.exec(`insert into auth.users(id) values('${uid}'),('${other}');
     insert into public.profiles(id,name,age,class,level,streak) values('${uid}','Test Hunter',25,'MAGE',10,3),('${other}','Other Hunter',25,'MAGE',10,3);
