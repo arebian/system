@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
@@ -12,6 +12,8 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const [completionNotes, setCompletionNotes] = useState({});
   const [reviewResults, setReviewResults] = useState({});
   const [timerSessions, setTimerSessions] = useState({});
+  const [photoPaths, setPhotoPaths] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [clockNow, setClockNow] = useState(Date.now());
 
   useEffect(() => {
@@ -91,6 +93,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     const item = objectives.find(row => row.id === objectiveId);
     const timerSession = timerSessions[objectiveId];
     const isTimer = item?.proof_type === "TIMER";
+    const isPhoto = item?.proof_type === "PHOTO";
     const evidence = String(completionNotes[objectiveId] || "").trim();
     if (isTimer && (!timerSession || timerSession.status !== "COMPLETED")) {
       setMessage("Complete the server-verified timer before submitting this objective.");
@@ -103,7 +106,12 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     if (busy) return;
     setBusy(true); setMessage("");
     try {
-      const review = await reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId: isTimer ? timerSession.id : null });
+      if (isPhoto && !photoPaths[objectiveId]) {
+        setMessage("Attach the original photo required by this objective.");
+        setBusy(false);
+        return;
+      }
+      const review = await reviewQuestObjectiveOnBackend({ objectiveId, evidence, timerSessionId: isTimer ? timerSession.id : null, imagePath: isPhoto ? photoPaths[objectiveId] : null });
       setReviewResults(current => ({ ...current, [objectiveId]: review }));
       setMessage(review?.decision === "APPROVE"
         ? "Evidence approved. Review the assessment, then choose whether to claim the objective XP."
@@ -113,7 +121,23 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_REVIEW_FAILED");
     } finally { setBusy(false); }
-  }, [completionNotes, busy, objectives, timerSessions]);
+  }, [completionNotes, busy, objectives, timerSessions, photoPaths]);
+
+  const attachPhoto = useCallback(async (objectiveId, file) => {
+    if (!file || uploadingPhoto) return;
+    if (!["image/jpeg","image/png","image/webp"].includes(String(file.type || "").toLowerCase())) {
+      setMessage("Photo proof supports JPG, PNG or WebP.");
+      return;
+    }
+    setUploadingPhoto(true); setMessage("");
+    try {
+      const uploaded = await uploadProofImage(file);
+      setPhotoPaths(current => ({ ...current, [objectiveId]: uploaded.path }));
+      setReviewResults(current => ({ ...current, [objectiveId]: null }));
+      setMessage("Private photo uploaded. Add your result description and submit for AI review.");
+    } catch (error) { setMessage(error?.message || "PHOTO_UPLOAD_FAILED"); }
+    finally { setUploadingPhoto(false); }
+  }, [uploadingPhoto]);
 
   const startTimer = useCallback(async (objectiveId) => {
     if (busy) return;
@@ -215,7 +239,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                         <button type="button" disabled={busy} onClick={() => startTimer(item.id)}>START {item.duration_minutes}-MIN VERIFIED TIMER</button>
                       )}
                       {timerSessions[item.id]?.status === "COMPLETED" && (
-                        <button type="button" disabled={busy || String(completionNotes[item.id] || "").trim().length < 12} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
+                        <button type="button" disabled={busy || uploadingPhoto || String(completionNotes[item.id] || "").trim().length < 12 || (item.proof_type === "PHOTO" && !photoPaths[item.id])} onClick={() => reviewObjective(item.id)}>SUBMIT TIMER FOR AI REVIEW</button>
                       )}
                       {reviewResults[item.id] && (
                         <div className={"quest-objective-review is-" + String(reviewResults[item.id].decision || "pending").toLowerCase()}>
@@ -234,6 +258,12 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
                     </div>
                   ) : (
                   <>
+                  {item.proof_type === "PHOTO" && (
+                    <label className="quest-objective-photo-upload">
+                      <span>{photoPaths[item.id] ? "PHOTO ATTACHED" : "ATTACH REQUIRED PHOTO (JPG / PNG / WEBP)"}</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || uploadingPhoto} onChange={event => attachPhoto(item.id, event.target.files?.[0])} />
+                    </label>
+                  )}
                   <textarea
                     value={completionNotes[item.id] || ""}
                     onChange={event => { setCompletionNotes(current => ({ ...current, [item.id]: event.target.value })); setReviewResults(current => ({ ...current, [item.id]: null })); }}
