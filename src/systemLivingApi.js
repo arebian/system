@@ -40,3 +40,14 @@ export async function livingSystemAction(action, payload = {}) {
 export async function reviewQuestOnBackend({ title, assignedFor, proof }) {
   return livingSystemAction("review_quest", { title, assigned_for: assignedFor, proof });
 }
+
+export async function reviewQuestObjectiveOnBackend({ objectiveId, evidence }) {
+  return livingSystemAction("review_quest_objective", {
+    objective_id: objectiveId,
+    proof: {
+      type: "RESULT",
+      detail: String(evidence || "").trim().slice(0, 5000),
+      note: String(evidence || "").trim().slice(0, 1000),
+    },
+  });
+}
