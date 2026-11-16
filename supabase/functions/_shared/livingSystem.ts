@@ -82,7 +82,6 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       if (objectiveError || !objective) throw new PublicFailure("OBJECTIVE_NOT_FOUND", 404);
       if (objective.status !== "ACCEPTED") throw new PublicFailure("OBJECTIVE_NOT_ACCEPTED");
       const objectiveProofType = String(objective.proof_type || "").toUpperCase();
-      if (objectiveProofType === "PHOTO") throw new PublicFailure("QUEST_SERVER_ACTIVITY_REQUIRED");
       let verifiedTimer: any = null;
       if (objectiveProofType === "TIMER") {
         const timerSessionId = String(payload.timer_session_id || "").trim();
@@ -102,7 +101,7 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       snapshot = {
         kind: "QUEST_OBJECTIVE", target_id: objective.id, title: objective.title_snapshot,
         objective: objective.objective_snapshot, pillar: objective.pillar, difficulty: objective.difficulty,
-        duration_minutes: objective.duration_minutes, proof_policy: objectiveProofType === "HONOR" ? "HONOR" : "RESULT",
+        duration_minutes: objective.duration_minutes, proof_policy: objectiveProofType === "HONOR" ? "HONOR" : objectiveProofType === "PHOTO" ? "PHOTO" : "RESULT",
         verified_timer: verifiedTimer ? { elapsed_seconds: verifiedTimer.elapsed_seconds, started_at: verifiedTimer.started_at, finished_at: verifiedTimer.finished_at } : null,
       };
     } else if (action === "review_weekly_boss") {
