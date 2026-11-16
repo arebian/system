@@ -106,11 +106,50 @@ export function SystemAppRuntime() {
   const [gameReady,setGameReady]=useState(false);
   const [bootMessage,setBootMessage]=useState("CONNECTING TO SYSTEM CLOUD...");
   const activeUserIdRef=useRef(null);
+  const authEventVersionRef=useRef(0);
 
   useEffect(()=>{
     let active=true;
 
+    // Subscribe before reading the stored session. On an OAuth return,
+    // Supabase may be exchanging the URL hash for a session at the same
+    // time as getSession() resolves. Registering the listener first and
+    // versioning auth events prevents a stale null session from winning
+    // that race and sending a successfully signed-in player back to Access.
+    const {data:listener}=
+      supabase.auth.onAuthStateChange(
+        (event,session)=>{
+          if(!active)return;
+          authEventVersionRef.current+=1;
+
+          const nextUser=
+            session?.user||null;
+
+          const nextId=
+            nextUser?.id||null;
+
+          const changedUser=
+            nextId !==
+            activeUserIdRef.current;
+
+          activeUserIdRef.current=
+            nextId;
+
+          setUser(nextUser);
+          setAuthReady(true);
+
+          if(changedUser){
+            setGameReady(false);
+          }
+
+          if(event==="SIGNED_OUT"){
+            setGameReady(false);
+          }
+        }
+      );
+
     async function bootAuth(){
+      const eventVersionAtStart=authEventVersionRef.current;
       try {
         const {
           data,
@@ -130,14 +169,18 @@ export function SystemAppRuntime() {
           );
         }
 
-        const sessionUser=
-          data?.session?.user||null;
+        // An auth event received while getSession() was pending is newer
+        // than its snapshot. Never overwrite that event with stale state.
+        if(authEventVersionRef.current===eventVersionAtStart){
+          const sessionUser=
+            data?.session?.user||null;
 
-        activeUserIdRef.current=
-          sessionUser?.id||null;
+          activeUserIdRef.current=
+            sessionUser?.id||null;
 
-        setUser(sessionUser);
-        setAuthReady(true);
+          setUser(sessionUser);
+          setAuthReady(true);
+        }
       } catch (error) {
         if(!active)return;
 
@@ -145,51 +188,18 @@ export function SystemAppRuntime() {
           "SYSTEM AUTH BOOT FAILED:",
           error
         );
-        activeUserIdRef.current=null;
-        setUser(null);
-        setBootMessage(
-          "AUTH LINK DEGRADED • PLEASE SIGN IN AGAIN"
-        );
-        setAuthReady(true);
+        if(authEventVersionRef.current===eventVersionAtStart){
+          activeUserIdRef.current=null;
+          setUser(null);
+          setBootMessage(
+            "AUTH LINK DEGRADED • PLEASE SIGN IN AGAIN"
+          );
+          setAuthReady(true);
+        }
       }
     }
 
     void bootAuth();
-
-    const {data:listener}=
-      supabase.auth.onAuthStateChange(
-        (event,session)=>{
-          if(!active)return;
-
-          const nextUser=
-            session?.user||null;
-
-          const nextId=
-            nextUser?.id||null;
-
-          const changedUser=
-            nextId !==
-            activeUserIdRef.current;
-
-          activeUserIdRef.current=
-            nextId;
-
-          setUser(nextUser);
-          setAuthReady(true);
-
-          // V8 reset gameReady on EVERY auth event.
-          // TOKEN_REFRESHED could therefore put the app back
-          // on the cloud loader without re-running prepareGame.
-          // Only reset when the actual signed-in account changes.
-          if(changedUser){
-            setGameReady(false);
-          }
-
-          if(event==="SIGNED_OUT"){
-            setGameReady(false);
-          }
-        }
-      );
 
     return ()=>{
       active=false;
