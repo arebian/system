@@ -55,7 +55,11 @@ jobs:
         with:
           version: 2.120.0
       - name: Start isolated local Supabase
-        run: supabase start
+        run: |
+          supabase start > "$RUNNER_TEMP/supabase-start.log" 2>&1 || {
+            tail -n 80 "$RUNNER_TEMP/supabase-start.log"
+            exit 1
+          }
       - name: Apply repository migrations to local database
         run: supabase db reset
       - name: Export local Supabase test credentials
