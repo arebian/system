@@ -1,4 +1,6 @@
 -- AI-reviewed evidence is required before an objective can award XP.
+-- Remove the earlier attestation-only signature so it cannot bypass review.
+drop function if exists public.system_complete_quest_objective(uuid,text);
 alter table public.system_quest_reviews
   drop constraint if exists system_quest_reviews_target_type_check;
 alter table public.system_quest_reviews
