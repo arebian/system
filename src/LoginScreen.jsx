@@ -733,6 +733,13 @@ export function LoginScreen({
             <h2>YOUR FIRST WEEK HAS A SHAPE.</h2>
 
             <div className="foundation-focus-summary">
+              <strong>IDENTITY DIRECTION</strong>
+              <span>Primary: {SYSTEM_IDENTITY_PILLARS.find(item => item.value === primaryPillar)?.label || "NOT SELECTED"}.</span>
+              {secondaryPillars.map(value => <span key={value}>Supporting: {SYSTEM_IDENTITY_PILLARS.find(item => item.value === value)?.label || value}.</span>)}
+              <span>Your class remains a separate specialization.</span>
+            </div>
+
+            <div className="foundation-focus-summary">
               <strong>YOUR GOALS</strong>
               {focusGoals.map((goal, index) => <span key={goal}>{index === 0 ? "Main priority: " : "Also: "}{FOUNDATION_FOCUS_OPTIONS.find(item => item.value === goal)?.label.toLowerCase()}.</span>)}
             </div>
