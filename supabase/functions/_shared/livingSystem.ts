@@ -77,10 +77,11 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       const objectiveId = String(payload.objective_id || "").trim();
       if (!/^[a-f0-9-]{36}$/i.test(objectiveId)) throw new PublicFailure("OBJECTIVE_ID_INVALID");
       const { data: objective, error: objectiveError } = await client.from("user_quest_objectives")
-        .select("id,user_id,user_quest_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,status")
+        .select("id,user_id,user_quest_id,title_snapshot,objective_snapshot,pillar,difficulty,duration_minutes,proof_type,status")
         .eq("id", objectiveId).eq("user_id", userId).maybeSingle();
       if (objectiveError || !objective) throw new PublicFailure("OBJECTIVE_NOT_FOUND", 404);
       if (objective.status !== "ACCEPTED") throw new PublicFailure("OBJECTIVE_NOT_ACCEPTED");
+      if (["TIMER","PHOTO"].includes(String(objective.proof_type || "").toUpperCase())) throw new PublicFailure("QUEST_SERVER_ACTIVITY_REQUIRED");
       const { data: parent, error: parentError } = await client.from("user_quests")
         .select("id,status,expires_at").eq("id", objective.user_quest_id).eq("user_id", userId).maybeSingle();
       if (parentError || !parent) throw new PublicFailure("QUEST_NOT_FOUND", 404);
@@ -88,7 +89,7 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       snapshot = {
         kind: "QUEST_OBJECTIVE", target_id: objective.id, title: objective.title_snapshot,
         objective: objective.objective_snapshot, pillar: objective.pillar, difficulty: objective.difficulty,
-        duration_minutes: objective.duration_minutes, proof_policy: "RESULT",
+        duration_minutes: objective.duration_minutes, proof_policy: String(objective.proof_type || "NOTE").toUpperCase() === "HONOR" ? "HONOR" : "RESULT",
       };
     } else if (action === "review_weekly_boss") {
       const state = await rpc(client, "system_weekly_boss_status_v1");
