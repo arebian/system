@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, fetchPillarCement, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
@@ -15,6 +15,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
   const [photoPaths, setPhotoPaths] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [clockNow, setClockNow] = useState(Date.now());
+  const [pillarCement, setPillarCement] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +31,14 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
     return () => { active = false; };
   }, [userQuestId]);
 
+
+  useEffect(() => {
+    let active = true;
+    fetchPillarCement(pillar)
+      .then(value => { if (active) setPillarCement(value); })
+      .catch(error => { if (active) setMessage(error?.message || "PILLAR_PROGRESS_LOAD_FAILED"); });
+    return () => { active = false; };
+  }, [pillar]);
 
   useEffect(() => {
     const timer = setInterval(() => setClockNow(Date.now()), 1000);
@@ -74,7 +83,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
     } finally { setBusy(false); }
   }, [userQuestId, recommendations, recommendationLimit, busy]);
 
-  // First-time NO ZERO DAY setup: generate the initial three recommendations
+  // First-time pillar quest setup: generate the initial three recommendations
   // automatically once the task library and saved objective state are loaded.
   // Rejected proposals remain in history, so replacements stay player-initiated.
   const autoGenerationAttemptedForRef = useRef("");
@@ -198,11 +207,17 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
       ));
       const cloudProfile = await bootstrapAuthoritativeProfile();
       if (cloudProfile && onProfileUpdated) onProfileUpdated(cloudProfile);
-      setMessage(result?.duplicate ? "This objective was already recorded." : "Objective completed. XP was awarded by the System.");
+      const updatedCement = await fetchPillarCement(pillar);
+      setPillarCement(updatedCement);
+      setMessage(result?.duplicate
+        ? "This objective was already recorded."
+        : result?.parent_completed
+          ? "Third mission approved. Main quest complete. +1 cement added to the " + String(pillar).toUpperCase() + " pillar."
+          : "Objective completed. XP was awarded by the System.");
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_COMPLETION_FAILED");
     } finally { setBusy(false); }
-  }, [reviewResults, busy, onProfileUpdated]);
+  }, [reviewResults, busy, onProfileUpdated, pillar]);
 
   if (!userQuestId) return null;
 
@@ -210,7 +225,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
         <div><small>QUEST EXPANSION // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>THREE PILLAR MISSIONS</h4></div>
-        <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"}</span>
+        <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"} · {pillarCement} CEMENT</span>
       </div>
       <p>All three missions strengthen this quest's pillar. The other daily quests build different pillars. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
