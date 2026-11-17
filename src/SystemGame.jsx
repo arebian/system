@@ -6328,9 +6328,10 @@ export function QuestPage({
                   )
                 }
               />
-              {state?.backendQuestId && quest.name === "NO ZERO DAY" && (
+              {state?.backendQuestId && (
                 <QuestObjectivesPanel
                   userQuestId={state.backendQuestId}
+                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "INTELLECT"}
                   identity={profile.identity}
                   profile={profile}
                   onProfileUpdated={applyAuthoritativeProfile}
