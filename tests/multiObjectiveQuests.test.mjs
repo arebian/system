@@ -194,7 +194,7 @@ test("adaptive objective recommendations respect identity, balance, recency and 
   const focused = recommendQuestObjectives([
     { id: "f1", title: "Focus 1", pillar: "PHYSICAL", difficulty: "EASY", duration_minutes: 5, proof_type: "NOTE" },
     { id: "f2", title: "Focus 2", pillar: "PHYSICAL", difficulty: "NORMAL", duration_minutes: 10, proof_type: "NOTE" },
-    { id: "f3", title: "Focus 3", pillar: "PHYSICAL", difficulty: "HARD", duration_minutes: 15, proof_type: "NOTE" },
+    { id: "f3", title: "Focus 3", pillar: "PHYSICAL", difficulty: "HARD", duration_minutes: 15, proof_type: "METRIC" },
     { id: "x1", title: "Other pillar", pillar: "SOCIAL", difficulty: "NORMAL", duration_minutes: 5, proof_type: "NOTE" },
   ], identity, { level: 5, recentCompletionRate: 65 }, 3, "PHYSICAL");
   assert.equal(focused.length,3);
