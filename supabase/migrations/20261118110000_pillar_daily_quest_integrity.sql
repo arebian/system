@@ -150,9 +150,9 @@ begin
       end if;
 
       select
-        count(*) filter (where status in ('ACCEPTED','COMPLETED')),
+        count(*) filter (where status in ('PROPOSED','ACCEPTED','COMPLETED')),
         count(*) filter (where status = 'COMPLETED'),
-        count(distinct pillar) filter (where status in ('ACCEPTED','COMPLETED'))
+        count(distinct pillar) filter (where status in ('PROPOSED','ACCEPTED','COMPLETED'))
       into v_total, v_completed, v_pillar_count
       from public.user_quest_objectives
       where user_quest_id = new.id and user_id = new.user_id;
