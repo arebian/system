@@ -136,6 +136,7 @@ set search_path = ''
 as $function$
 declare
   v_total integer;
+  v_any integer;
   v_completed integer;
   v_pillar_count integer;
   v_target_pillar text;
@@ -178,17 +179,19 @@ begin
         );
       end if;
     else
-      select count(*), count(*) filter (where status='COMPLETED')
-        into v_total, v_completed
+      select
+        count(*),
+        count(*) filter (where status in ('PROPOSED','ACCEPTED','COMPLETED')),
+        count(*) filter (where status='COMPLETED')
+        into v_any, v_total, v_completed
       from public.user_quest_objectives
-      where user_quest_id = new.id and user_id = new.user_id
-        and status in ('ACCEPTED','COMPLETED');
+      where user_quest_id = new.id and user_id = new.user_id;
 
       if upper(trim(coalesce(new.title_snapshot,''))) = 'NO ZERO DAY' then
         if v_total <> 3 or v_completed <> 3 then
           raise exception 'QUEST_OBJECTIVES_INCOMPLETE';
         end if;
-      elsif v_total > 0 and (v_total <> 3 or v_completed <> 3) then
+      elsif v_any > 0 and (v_total <> 3 or v_completed <> 3) then
         raise exception 'QUEST_OBJECTIVES_INCOMPLETE';
       end if;
     end if;
