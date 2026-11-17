@@ -622,6 +622,18 @@ export async function fetchQuestTaskLibrary() {
   return data || [];
 }
 
+export async function fetchPillarCement(pillar) {
+  const target = String(pillar || "").trim().toUpperCase();
+  if (!target) return 0;
+  const { data, error } = await supabase
+    .from("user_pillar_progress")
+    .select("cement")
+    .eq("pillar", target)
+    .maybeSingle();
+  if (error) throw error;
+  return Number(data?.cement || 0);
+}
+
 export async function fetchQuestObjectives(userQuestId) {
   const { data, error } = await supabase
     .from("user_quest_objectives")
