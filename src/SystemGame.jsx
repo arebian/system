@@ -4499,6 +4499,7 @@ export function QuestPage({
         "DISCIPLINE",
       pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
+      task: "Make today count by completing the three Discipline missions below. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "physical",
@@ -4514,6 +4515,7 @@ export function QuestPage({
           profile.path +
           "must2"
       ),
+      task: "Build the Physical pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "focus",
@@ -4526,6 +4528,7 @@ export function QuestPage({
           profile.path +
           "must3"
       ),
+      task: "Build the Intellect pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
   ];
 
@@ -7702,6 +7705,7 @@ export function MustCard({
                 disabled={
                   syncing ||
                   !ready ||
+                  Boolean(quest.pillar) ||
                   Boolean(
                     state?.completed ||
                     state?.failed ||
@@ -7710,9 +7714,11 @@ export function MustCard({
                 }
                 onClick={complete}
               >
-                {syncing
-                  ? "SYNCHRONIZING..."
-                  : "SUBMIT COMPLETION"}
+                {quest.pillar
+                  ? "COMPLETE THE THREE MISSIONS BELOW"
+                  : syncing
+                    ? "SYNCHRONIZING..."
+                    : "SUBMIT COMPLETION"}
               </button>
             )}
           </>
