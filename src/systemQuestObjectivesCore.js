@@ -1,7 +1,7 @@
 const PILLARS = ["DISCIPLINE","PHYSICAL","INTELLECT","WEALTH","SOCIAL","MENTAL","SPIRITUAL"];
 const DIFFICULTY_RANK = { EASY: 1, NORMAL: 2, HARD: 3, ELITE: 4 };
 
-export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}, limit = 3) {
+export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}, limit = 3, targetPillar = null) {
   const primary = String(identity?.primary || "DISCIPLINE").toUpperCase();
   const secondary = Array.isArray(identity?.secondary)
     ? identity.secondary.map(value => String(value).toUpperCase())
@@ -24,6 +24,32 @@ export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}
     task?.id && task?.active !== false && ["HONOR","NOTE","TIMER","PHOTO"].includes(String(task.proof_type || "HONOR").toUpperCase()) && DIFFICULTY_RANK[String(task.difficulty).toUpperCase()]
   );
 
+  const sortByAdaptiveDifficulty = (a, b) => {
+    const da = Math.abs(DIFFICULTY_RANK[String(a.difficulty).toUpperCase()] - targetRank);
+    const db = Math.abs(DIFFICULTY_RANK[String(b.difficulty).toUpperCase()] - targetRank);
+    return da - db || Number(a.duration_minutes || 0) - Number(b.duration_minutes || 0);
+  };
+  const wasCompletedRecently = task => recent.some(done =>
+    String(done?.name || done?.title || "").toUpperCase() === String(task.title).toUpperCase()
+  );
+
+  // A pillar quest is a focused build: every mission belongs to the same pillar.
+  // The three daily parent quests pass different targetPillar values.
+  if (targetPillar) {
+    const pillar = String(targetPillar).toUpperCase();
+    if (!PILLARS.includes(pillar)) return [];
+    const matches = candidates
+      .filter(task => String(task.pillar).toUpperCase() === pillar)
+      .sort((a, b) => Number(wasCompletedRecently(a)) - Number(wasCompletedRecently(b)) || sortByAdaptiveDifficulty(a, b));
+    return matches.slice(0, Math.max(0, limit)).map((task, index) => ({
+      ...task,
+      recommendationReason: pillar === primary
+        ? "Aligned with your primary identity pillar."
+        : `Mission ${index + 1} contributes directly to the ${pillar} pillar.`,
+    }));
+  }
+
+  // Backwards-compatible recommendation mode for older non-pillar quest surfaces.
   const chosen = [];
   const usedPillars = new Set();
   for (const pillar of preferred) {
@@ -31,14 +57,8 @@ export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}
     if (usedPillars.has(pillar)) continue;
     const matches = candidates
       .filter(task => String(task.pillar).toUpperCase() === pillar)
-      .sort((a,b) => {
-        const da = Math.abs(DIFFICULTY_RANK[String(a.difficulty).toUpperCase()] - targetRank);
-        const db = Math.abs(DIFFICULTY_RANK[String(b.difficulty).toUpperCase()] - targetRank);
-        return da - db || Number(a.duration_minutes || 0) - Number(b.duration_minutes || 0);
-      });
-    const task = matches.find(item => !recent.some(done =>
-      String(done?.name || done?.title || "").toUpperCase() === String(item.title).toUpperCase()
-    )) || matches[0];
+      .sort(sortByAdaptiveDifficulty);
+    const task = matches.find(item => !wasCompletedRecently(item)) || matches[0];
     if (!task) continue;
     chosen.push({
       ...task,
