@@ -1,6 +1,43 @@
 -- Pillar-based daily quest integrity and cement progression.
 -- A pillar quest is tagged by the authoritative must-quest acceptance RPC.
 
+-- Replace vague legacy instructions in the three daily pillar tracks with concrete completion criteria.
+update public.quest_task_library set objective =
+  'Select one responsibility that can be finished in 20 minutes. Write the exact end result, work on it for one 20-minute timer without switching, then record the completed output.'
+where code='DISCIPLINE_CLOSE_LOOP';
+
+update public.quest_task_library set objective =
+  'Choose the highest-priority unfinished task. Set a 25-minute timer, silence notifications, keep one task open, and save or submit the result before stopping.'
+where code='DISCIPLINE_FOCUS_BLOCK';
+
+update public.quest_task_library set objective =
+  'Write three specific actions for tomorrow. For each, assign a start time and first physical step. Put the list somewhere you will see it.'
+where code='DISCIPLINE_PLAN_TOMORROW';
+
+update public.quest_task_library set objective =
+  'Complete 20 minutes of brisk walking or cycling at a pace that allows full-sentence conversation. Record the minutes and effort from 1 to 10.'
+where code='PHYSICAL_ENDURANCE';
+
+update public.quest_task_library set objective =
+  'Complete 2 rounds: 10 bodyweight squats, 8 wall or incline push-ups, 12 glute bridges and a 20-second plank. Rest 60 seconds between rounds; stop if form breaks.'
+where code='PHYSICAL_MOVE';
+
+update public.quest_task_library set objective =
+  'Complete 3 controlled rounds: 8 reverse lunges per side, 8 incline push-ups, 12 glute bridges and a 20-second side plank per side. Rest 60 seconds; use a stable support if needed.'
+where code='PHYSICAL_STRENGTH';
+
+update public.quest_task_library set objective =
+  'Spend 5 minutes writing: (1) what am I feeling? (2) what triggered it? (3) what is one useful next action?'
+where code='MENTAL_REFLECT';
+
+update public.quest_task_library set objective =
+  'Take a 10-minute screen-free break. Set a timer, walk or sit quietly, then write the first action you will take when you return.'
+where code='MENTAL_RESET';
+
+update public.quest_task_library set objective =
+  'Write one recent setback in 3 parts: what happened, what was within your control, and one specific adjustment you will test next time.'
+where code='MENTAL_RESILIENCE';
+
 -- Expand each pillar to six actionable options so rejected missions can be replaced.
 insert into public.quest_task_library(
   code,title,objective,pillar,difficulty,duration_minutes,min_level,xp_reward,proof_type,active
