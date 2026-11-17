@@ -3,7 +3,7 @@ import { fetchQuestTaskLibrary, fetchQuestObjectives, fetchPillarCement, propose
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
-export default function QuestObjectivesPanel({ userQuestId, pillar, identity, profile, onProfileUpdated }) {
+export default function QuestObjectivesPanel({ userQuestId, pillar, identity, profile, onProfileUpdated, onParentCompleted }) {
   const [tasks, setTasks] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [status, setStatus] = useState("LOADING");
@@ -207,6 +207,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
       ));
       const cloudProfile = await bootstrapAuthoritativeProfile();
       if (cloudProfile && onProfileUpdated) onProfileUpdated(cloudProfile);
+      if (result?.parent_completed && onParentCompleted) onParentCompleted();
       const updatedCement = await fetchPillarCement(pillar);
       setPillarCement(updatedCement);
       setMessage(result?.duplicate
@@ -217,7 +218,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_COMPLETION_FAILED");
     } finally { setBusy(false); }
-  }, [reviewResults, busy, onProfileUpdated, pillar]);
+  }, [reviewResults, busy, onProfileUpdated, onParentCompleted, pillar]);
 
   if (!userQuestId) return null;
 
