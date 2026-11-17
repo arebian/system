@@ -131,14 +131,19 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
     returning id,code
   `)).rows;
   const pillarTaskIds = Object.fromEntries(pillarTaskRows.map(row => [row.code,row.id]));
+  const pillarLibraryId = (await db.query(`
+    insert into public.quest_library(code,title,objective,category,quest_type,difficulty,xp_reward,min_level,metadata)
+    values('QA_PILLAR_QUEST','PILLAR QUEST','Build one identity pillar.','PHYSICAL','DAILY','NORMAL',50,1,'{}')
+    returning id
+  `)).rows[0].id;
   const pillarParent = (await db.query(`
     insert into public.user_quests(
       user_id,quest_id,assigned_for,quest_type,title_snapshot,objective_snapshot,category,xp_reward,status,metadata
     )
-    select $1,id,current_date,'DAILY','PILLAR QUEST','Build the physical pillar.','PHYSICAL',50,'ASSIGNED',
-      '{"pillar_quest":true,"target_pillar":"PHYSICAL"}'::jsonb
-    from public.quest_library where code='QA_NO_ZERO_DAY' returning id
-  `, [user])).rows[0].id;
+    values($1,$2,current_date,'DAILY','PILLAR QUEST','Build the physical pillar.','PHYSICAL',50,'ASSIGNED',
+      '{"pillar_quest":true,"target_pillar":"PHYSICAL"}'::jsonb)
+    returning id
+  `, [user,pillarLibraryId])).rows[0].id;
   await assert.rejects(
     db.query("select public.system_propose_quest_objectives($1,$2::uuid[],'{}')", [
       pillarParent,
