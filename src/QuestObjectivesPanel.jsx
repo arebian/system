@@ -332,7 +332,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
               )}
             </article>
           ))}
-          {recommendationLimit > 0 && summary.proposed === 0 && summary.completed === 0 && (
+          {recommendationLimit > 0 && summary.proposed === 0 && (
             <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || busy} onClick={generate}>
               {busy ? "GENERATING…" : "GENERATE " + recommendationLimit + " REPLACEMENT OBJECTIVE" + (recommendationLimit === 1 ? "" : "S")}
             </button>
