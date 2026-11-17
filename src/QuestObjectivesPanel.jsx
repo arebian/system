@@ -3,7 +3,7 @@ import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBa
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
-export default function QuestObjectivesPanel({ userQuestId, identity, profile, onProfileUpdated }) {
+export default function QuestObjectivesPanel({ userQuestId, pillar, identity, profile, onProfileUpdated }) {
   const [tasks, setTasks] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [status, setStatus] = useState("LOADING");
@@ -49,14 +49,12 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const recommendationLimit = Math.max(0, 3 - lockedObjectives.length);
   const recommendations = useMemo(() => {
     const unavailableTaskIds = new Set(objectives.map(item => item.task_id).filter(Boolean));
-    const lockedPillars = new Set(objectives
-      .filter(item => item.status === "ACCEPTED" || item.status === "COMPLETED")
-      .map(item => item.pillar));
+    const targetPillar = String(pillar || "").toUpperCase();
     const availableTasks = tasks.filter(task =>
-      !unavailableTaskIds.has(task.id) && !lockedPillars.has(task.pillar)
+      !unavailableTaskIds.has(task.id) && String(task.pillar || "").toUpperCase() === targetPillar
     );
-    return recommendQuestObjectives(availableTasks, identity, profile, recommendationLimit);
-  }, [tasks, identity, profile, objectives, recommendationLimit]);
+    return recommendQuestObjectives(availableTasks, identity, profile, recommendationLimit, targetPillar);
+  }, [tasks, identity, profile, objectives, recommendationLimit, pillar]);
   const visibleObjectives = objectives.filter(item => item.status !== "REJECTED");
   const summary = objectiveProposalSummary(visibleObjectives);
 
@@ -211,10 +209,10 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   return (
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
-        <div><small>QUEST EXPANSION // SYSTEM AI</small><h4>MINI-QUEST OBJECTIVES</h4></div>
+        <div><small>QUEST EXPANSION // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>THREE PILLAR MISSIONS</h4></div>
         <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"}</span>
       </div>
-      <p>Three focused actions: physical development, intellectual development and a task aligned with your identity. AI recommends; you decide.</p>
+      <p>All three missions strengthen this quest's pillar. The other daily quests build different pillars. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
         <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
           {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING THREE OBJECTIVES…" : "RETRY GENERATING 3 OBJECTIVES"}
