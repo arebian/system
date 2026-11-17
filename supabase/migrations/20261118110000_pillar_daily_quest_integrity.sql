@@ -1,6 +1,43 @@
 -- Pillar-based daily quest integrity and cement progression.
 -- A pillar quest is tagged by the authoritative must-quest acceptance RPC.
 
+-- Expand each pillar to six actionable options so rejected missions can be replaced.
+insert into public.quest_task_library(
+  code,title,objective,pillar,difficulty,duration_minutes,min_level,xp_reward,proof_type,active
+) values
+  ('DISCIPLINE_START_BLOCK','START THE FIRST BLOCK','Choose one priority due today. Write the exact output you will finish, set a 20-minute timer, work without switching tasks, then record the output.','DISCIPLINE','NORMAL',20,1,15,'TIMER',true),
+  ('DISCIPLINE_CLEAR_SPACE','RESET YOUR WORKSPACE','Spend 10 minutes clearing your main work surface. Put away unrelated items, open only the tools needed for your next task, and begin that task before leaving.','DISCIPLINE','EASY',10,1,10,'NOTE',true),
+  ('DISCIPLINE_CLOSE_ADMIN','CLOSE ONE ADMIN TASK','Choose one pending message, bill, booking or form that takes 15 minutes or less. Complete and send/submit it; record what was closed.','DISCIPLINE','NORMAL',15,1,15,'NOTE',true),
+  ('INTELLECT_ACTIVE_RECALL','ACTIVE RECALL DRILL','Study one topic for 12 minutes. Close the source and write five facts or steps from memory, then reopen it and correct the gaps.','INTELLECT','NORMAL',18,1,15,'NOTE',true),
+  ('INTELLECT_SKILL_REPS','SKILL REPETITIONS','Choose one skill you are building. Complete three 5-minute practice rounds, each with one specific correction, then record what improved.','INTELLECT','NORMAL',15,1,15,'TIMER',true),
+  ('INTELLECT_EXPLAIN_THREE','EXPLAIN THREE IDEAS','Choose one topic you studied. Explain three key ideas in your own words without copying the source; include one real-world example.','INTELLECT','NORMAL',15,1,15,'NOTE',true),
+  ('PHYSICAL_BODYWEIGHT_BASE','BODYWEIGHT FOUNDATION','Complete 2 controlled rounds: 8 bodyweight squats, 6 wall or incline push-ups, 10 calf raises and a 20-second plank. Rest 60 seconds between rounds; stop if form breaks.','PHYSICAL','NORMAL',12,1,15,'NOTE',true),
+  ('PHYSICAL_BRISK_WALK','BRISK WALK BLOCK','Walk continuously for 15 minutes at a pace that raises your breathing slightly while still allowing you to speak in full sentences. Record the duration.','PHYSICAL','EASY',15,1,12,'TIMER',true),
+  ('PHYSICAL_MOBILITY_FLOW','MOBILITY SEQUENCE','Complete 2 slow rounds: 8 cat-cow reps, 8 hip circles per side, 10 shoulder circles and a 30-second calf stretch per side. Move only through comfortable ranges.','PHYSICAL','EASY',10,1,12,'NOTE',true),
+  ('WEALTH_SKILL_BLOCK','INCOME SKILL BLOCK','Spend 20 uninterrupted minutes practising one skill that can improve your earning ability. Produce one visible output such as a sample, draft, exercise or portfolio update.','WEALTH','NORMAL',20,1,18,'TIMER',true),
+  ('WEALTH_EXPENSE_AUDIT','REVIEW TODAY’S SPENDING','Record every expense from today, assign each one a category, total the amount, and identify one expense to plan for or reduce.','WEALTH','EASY',12,1,12,'NOTE',true),
+  ('WEALTH_CREATE_OFFER','IMPROVE ONE OFFER','Choose one product or service you could sell. Write a clear one-sentence benefit, identify the intended buyer, and create or improve one sales asset.','WEALTH','NORMAL',20,1,18,'NOTE',true),
+  ('SOCIAL_LISTENING_REP','LISTENING PRACTICE','Have one conversation. Ask two open questions, let the other person finish without interruption, and summarise one point they made before responding.','SOCIAL','NORMAL',10,1,15,'NOTE',true),
+  ('SOCIAL_PROFESSIONAL_REACH','PROFESSIONAL OUTREACH','Send one thoughtful message to a relevant contact. Mention why you are reaching out and make one clear, respectful request or offer.','SOCIAL','NORMAL',10,1,15,'NOTE',true),
+  ('SOCIAL_ACT_OF_HELP','PRACTICAL ACT OF HELP','Identify one person who would benefit from a small practical action. Offer or complete that action, then record what you did.','SOCIAL','EASY',10,1,12,'NOTE',true),
+  ('MENTAL_BREATH_RESET','BREATHING RESET','Sit comfortably for five minutes. Breathe gently with a slightly longer exhale, without forcing or holding your breath; record your state before and after.','MENTAL','EASY',5,1,10,'TIMER',true),
+  ('MENTAL_THOUGHT_CHECK','CHECK THE THOUGHT','Write one stressful thought. Separate the observable facts from your interpretation, list one alternative explanation, and choose one useful next action.','MENTAL','NORMAL',12,1,15,'NOTE',true),
+  ('MENTAL_SCREEN_BREAK','SCREEN-FREE RESET','Take a 12-minute break away from all screens. Walk, stretch or sit quietly, then return and write the next action for your current task.','MENTAL','EASY',12,1,10,'TIMER',true),
+  ('SPIRITUAL_QUIET_REFLECTION','QUIET REFLECTION','Spend 10 quiet minutes in prayer, meditation or personal reflection according to your own practice. Write one insight and one action it suggests.','SPIRITUAL','EASY',10,1,12,'TIMER',true),
+  ('SPIRITUAL_SERVICE_ACTION','ACT OF SERVICE','Complete one specific helpful action for another person without expecting a reward. Record what you chose to do and why.','SPIRITUAL','NORMAL',15,1,15,'NOTE',true),
+  ('SPIRITUAL_VALUE_IN_ACTION','PUT A VALUE INTO ACTION','Choose one personal value. Write one behaviour that demonstrates it, carry out that behaviour today, and record the result.','SPIRITUAL','NORMAL',12,1,15,'NOTE',true)
+on conflict (code) do update set
+  title=excluded.title,
+  objective=excluded.objective,
+  pillar=excluded.pillar,
+  difficulty=excluded.difficulty,
+  duration_minutes=excluded.duration_minutes,
+  min_level=excluded.min_level,
+  xp_reward=excluded.xp_reward,
+  proof_type=excluded.proof_type,
+  active=excluded.active,
+  updated_at=now();
+
 create table if not exists public.user_pillar_progress (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
