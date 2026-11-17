@@ -139,10 +139,10 @@ begin
      and coalesce(new.metadata->>'pillar_cement_awarded_at','') <> '' then
     v_pillar := upper(new.metadata->>'target_pillar');
 
-    insert into public.user_pillar_progress(user_id,pillar,cement)
+    insert into public.user_pillar_progress as progress(user_id,pillar,cement)
     values(new.user_id,v_pillar,1)
     on conflict (user_id,pillar) do update
-      set cement = public.user_pillar_progress.cement + 1,
+      set cement = progress.cement + 1,
           updated_at = now();
 
     insert into public.journey_events(
