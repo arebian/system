@@ -6343,6 +6343,27 @@ export function QuestPage({
                   identity={profile.identity}
                   profile={profile}
                   onProfileUpdated={applyAuthoritativeProfile}
+                  onParentCompleted={() => {
+                    const mustKey = date + "-" + quest.id;
+                    const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
+                    commitMustState({
+                      ...currentMustState,
+                      [mustKey]: {
+                        ...(currentMustState[mustKey] || {}),
+                        accepted: true,
+                        mandatory: true,
+                        completed: true,
+                        failed: false,
+                        penaltyApplied: false,
+                        penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
+                        name: quest.name,
+                        date,
+                        backendQuestId: state.backendQuestId,
+                        authoritative: true,
+                        syncStatus: "COMPLETED",
+                      },
+                    });
+                  }}
                 />
               )}
               </React.Fragment>
