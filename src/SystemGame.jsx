@@ -4497,12 +4497,14 @@ export function QuestPage({
       id: "discipline",
       type:
         "DISCIPLINE",
+      pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
     },
     {
       id: "physical",
       type:
         "PHYSICAL",
+      pillar: "PHYSICAL",
       ...pick(
         MUST_PHYSICAL[
           profile.path
@@ -4517,6 +4519,7 @@ export function QuestPage({
       id: "focus",
       type:
         "FOCUS",
+      pillar: "INTELLECT",
       ...pick(
         MUST_FOCUS,
         date +
@@ -4617,6 +4620,8 @@ export function QuestPage({
                     key,
                   assignedFor:
                     date,
+                  pillar:
+                    quest.pillar,
                 })
             );
 
