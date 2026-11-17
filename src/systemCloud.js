@@ -1675,6 +1675,7 @@ export async function acceptMustQuestOnBackend({
   durationSeconds = 86400,
   legacyKey = null,
   assignedFor = null,
+  pillar = null,
 }) {
   const normalizedTitle = String(title || "").trim();
   if (!normalizedTitle) {
@@ -1711,6 +1712,10 @@ export async function acceptMustQuestOnBackend({
                   legacyKey,
                 assigned_for:
                   effectiveDate,
+                pillar_quest:
+                  Boolean(pillar),
+                target_pillar:
+                  pillar ? String(pillar).toUpperCase() : null,
               },
             }
           ),
