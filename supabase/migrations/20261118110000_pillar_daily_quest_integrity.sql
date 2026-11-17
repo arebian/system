@@ -296,9 +296,17 @@ begin
     where user_quest_id=v_parent.id and user_id=v_user and status='COMPLETED';
 
     if v_completed = 3 then
-      update public.user_quests
-      set status='COMPLETED', completed_at=now(), updated_at=now()
-      where id=v_parent.id and user_id=v_user and status in ('ASSIGNED','ACCEPTED');
+      perform system_private.complete_quest_before_living_system(
+        v_parent.id,
+        jsonb_build_object(
+          'proof_type','HONOR',
+          'proof_verified_at',now(),
+          'completion_source','THREE_APPROVED_PILLAR_MISSIONS',
+          'pillar',upper(v_parent.metadata->>'target_pillar'),
+          'completed_mission_count',3
+        )
+      );
+      select * into v_profile from public.profiles where id=v_user;
     end if;
   end if;
 
