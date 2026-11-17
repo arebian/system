@@ -4521,14 +4521,14 @@ export function QuestPage({
       id: "focus",
       type:
         "FOCUS",
-      pillar: "INTELLECT",
+      pillar: "MENTAL",
       ...pick(
         MUST_FOCUS,
         date +
           profile.path +
           "must3"
       ),
-      task: "Build the Intellect pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
+      task: "Build the Mental pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
   ];
 
@@ -6339,7 +6339,7 @@ export function QuestPage({
               {state?.backendQuestId && (
                 <QuestObjectivesPanel
                   userQuestId={state.backendQuestId}
-                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "INTELLECT"}
+                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
                   identity={profile.identity}
                   profile={profile}
                   onProfileUpdated={applyAuthoritativeProfile}
