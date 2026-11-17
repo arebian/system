@@ -163,7 +163,10 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
     const reviewId = await addReview(user,objective.id);
     await completeWith(objective.id,reviewId);
   }
-  await db.query("update public.user_quests set status='COMPLETED' where id=$1",[pillarParent]);
+  const autoCompletedParent = (await db.query(
+    "select status from public.user_quests where id=$1",[pillarParent]
+  )).rows[0].status;
+  assert.equal(autoCompletedParent,"COMPLETED","the third approved mission must auto-complete the parent quest");
   const cement = (await db.query(
     "select cement from public.user_pillar_progress where user_id=$1 and pillar='PHYSICAL'",
     [user]
