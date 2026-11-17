@@ -338,7 +338,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
             </button>
           )}
           {summary.proposed === 0 && summary.allAccepted && (
-            <small className="quest-objectives-confirmed">ALL THREE OBJECTIVES APPROVED — COMPLETE EACH ONE TO UNLOCK THE PARENT QUEST.</small>
+            <small className="quest-objectives-confirmed">ALL THREE MISSIONS ACCEPTED — COMPLETE EACH ONE FOR AUTOMATIC QUEST APPROVAL.</small>
           )}
         </div>
       )}
