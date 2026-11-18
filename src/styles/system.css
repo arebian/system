@@ -6571,31 +6571,18 @@ button {
     );
 }
 
-/* Light theme panels should feel tinted, not white */
+/* Light mode keeps the selected class atmosphere in every surface. */
 .app.light .card3d,
 .app.light .options,
 .app.light .urgent-modal {
   background:
     linear-gradient(
       145deg,
-      color-mix(
-        in srgb,
-        var(--panel-bg) 48%,
-        rgba(255,255,255,.58)
-      ),
-      color-mix(
-        in srgb,
-        var(--panel-bg) 36%,
-        rgba(236,241,247,.72)
-      )
+      color-mix(in srgb, var(--panel-bg) 88%, var(--accent) 12%),
+      color-mix(in srgb, var(--panel-bg) 92%, var(--secondary) 8%)
     );
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--accent) 15%,
-      rgba(25,42,60,.13)
-    );
+  border-color: color-mix(in srgb, var(--accent) 26%, rgba(25,42,60,.16));
+  box-shadow: 0 16px 32px rgba(30,35,48,.10), inset 0 1px 0 rgba(255,255,255,.34);
 }
 
 .app.light .top-bar,
@@ -18689,9 +18676,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .app.light .daily-command-briefing {
-  border-color: rgba(100, 60, 150, .2) !important;
-  background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(248, 244, 251, .98)) !important;
-  box-shadow: 0 16px 34px rgba(37, 25, 49, .10) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--panel-bg) 86%, var(--accent) 14%),
+    color-mix(in srgb, var(--app-bg) 90%, var(--secondary) 10%)
+  ) !important;
+  box-shadow: 0 16px 34px rgba(37, 35, 45, .12), inset 0 1px 0 rgba(255,255,255,.28) !important;
 }
 
 .app.light .daily-command-briefing .system-awareness-briefing-head h2,
@@ -18700,8 +18691,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .app.light .daily-command-slot {
-  border-color: rgba(102, 77, 132, .18);
-  background: rgba(255, 255, 255, .72);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--panel-bg) 82%, var(--accent) 18%);
 }
 
 .app.light .daily-command-slot p,
@@ -18748,3 +18739,16 @@ input[type="range"]::-moz-range-thumb {
 .special-camera-frame > span { position: absolute; z-index: 1; top: 12px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 8px 12px; border-radius: 20px; white-space: nowrap; font-size: 11px; }
 .special-camera-frame video { width: 100%; transform: scaleX(-1); }
 .app.light .class-special-workspace p, .app.light .class-special-workspace small { color: #465260; }
+
+
+/* Daily Command pillar cards: keep all three foundations visually distinct. */
+.daily-command-slot.pillar { border-top: 2px solid var(--accent); }
+.daily-command-slot.pillar.discipline { --pillar-tint: #b7793f; }
+.daily-command-slot.pillar.physical { --pillar-tint: #22a879; }
+.daily-command-slot.pillar.mental { --pillar-tint: #8b5cf6; }
+.daily-command-slot.pillar { border-color: color-mix(in srgb, var(--pillar-tint, var(--accent)) 38%, var(--border)); }
+.daily-command-slot.pillar small { color: color-mix(in srgb, var(--pillar-tint, var(--accent)) 78%, var(--text, #ddd)); }
+.app.light .daily-command-slot strong { color: #202b36 !important; }
+.app.light .daily-command-slot p,
+.app.light .daily-command-slot span { color: #4d5967 !important; }
+.app.light .daily-command-slot b { color: color-mix(in srgb, var(--accent) 75%, #263241) !important; }
