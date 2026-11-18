@@ -19,6 +19,7 @@ import { canReuseApprovedReview } from "./systemReviewCore.js";
 import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { assignBossOnBackend, bootstrapAuthoritativeProfile, hydrateStructuredProfile, setBossObjectiveOnBackend, resolveBossOnBackend, evaluateAdaptiveQuest, acceptMustQuestOnBackend, updateRoutineOnBackend, routineCheckinOnBackend, completeQuestByTitleOnBackend, applyExpiredQuestPenaltiesOnBackend, uploadProofFile, loadAttributeCredits, allocateAttributeCreditOnBackend, startGpsSessionOnBackend, finishGpsWorkoutOnBackend, finishGpsSessionOnBackend, loadTrainingCatalog, uploadProofImage, submitProofRecordOnBackend, submitSkillAttemptOnBackend, saveLearningRecord, countLearningRecordsForSkill, evaluateSkillOnBackend, addPerformanceLogOnBackend, addWealthLogOnBackend, updateGoalProgressOnBackend, claimGoalOnBackend, createGoalOnBackend, addCustomInventoryOnBackend, claimRewardOnBackend, setInventoryStateOnBackend, refreshProgressionUnlocksOnBackend, equipTitleOnBackend, loadDailyCommandBrief, saveCloudPreferences, startTimedWorkoutOnBackend, completeTimedWorkoutOnBackend, completeWorkoutOnBackend } from "./systemCloud.js";
 import { buildQuestActionKey, getQuestProofType, mustStateMatchesQuest, getServerClockOffsetMs, isMustStateReady, QUEST_PROOF_LABELS } from "./systemQuestCore.js";
+import { normalizeDailyPillarDirectives } from "./systemDailyCommandCore.js";
 import { createPortal } from "react-dom";
 import { calculateClassAlignment, getClassAttributeBlueprint, sortAttributesForClass, normalizeAttributeCredit, getAttributeTier } from "./systemAttributesCore.js";
 import { getWorkoutVerificationMode, WORKOUT_VERIFICATION_MODES, buildTimedWorkoutPlan, getTimedWorkoutCountdown, getTimedWorkoutPhase } from "./systemWorkoutTimer.js";
@@ -2447,11 +2448,9 @@ export function DailySystemBriefing({
   const fuel = normalizeFuelState(profile.fuel);
   const fuelToday = summarizeFuelDay(fuel.logs[todayKey()], fuel.calorieTarget, fuel.proteinTarget);
   const recovery = awareness.recoveryDirective;
-  const mustDirective =
-    commandReady
-      ? dailyCommand.must_directive ||
-        null
-      : null;
+  const pillarDirectives = normalizeDailyPillarDirectives(
+    commandReady ? dailyCommand : null
+  );
   const classDirective =
     commandReady
       ? dailyCommand.class_directive ||
@@ -2464,29 +2463,6 @@ export function DailySystemBriefing({
         ?.unspent_credits
     ) || 0
   );
-
-  const mustReward =
-    mustDirective?.status ===
-    "ACTIVE"
-      ? "+" +
-        Number(
-          mustDirective.xp ||
-            0
-        ) +
-        " XP" +
-        (
-          Number(
-            mustDirective.penalty ||
-              0
-          ) > 0
-            ? " • -" +
-              Number(
-                mustDirective.penalty
-              ) +
-              " XP IF FAILED"
-            : ""
-        )
-      : "ACCEPT WHEN READY";
 
   const classReward =
     classDirective?.status ===
@@ -2519,18 +2495,30 @@ export function DailySystemBriefing({
 
       {commandReady ? (
         <div className="daily-command-grid">
-          <article className="daily-command-slot must">
-            <small>01 // MUST DIRECTIVE</small>
-            <strong>{mustDirective?.title || "NO MUST DIRECTIVE ACTIVE"}</strong>
-            <p>{mustDirective?.objective || "Open the Quest Board when you are ready to accept a 24-hour directive."}</p>
-            <div>
-              <span>{mustDirective?.status === "ACTIVE" ? "ACTIVE • 24-HOUR CONTRACT" : "STANDBY"}</span>
-              <b>{mustReward}</b>
-            </div>
-          </article>
+          {pillarDirectives.map((directive, index) => (
+            <article className={`daily-command-slot pillar ${directive.pillar.toLowerCase()}`} key={directive.pillar}>
+              <small>{String(index + 1).padStart(2, "0")} // {directive.pillar} PILLAR</small>
+              <strong>{directive.title}</strong>
+              <p>{directive.objective}</p>
+              <div>
+                <span>{directive.status === "COMPLETED"
+                  ? "QUEST APPROVED"
+                  : directive.status === "FAILED"
+                    ? "QUEST FAILED"
+                    : directive.status === "SYNCING"
+                      ? "SYNCHRONIZING"
+                      : `${directive.completedMissions} / 3 MISSIONS APPROVED`}</span>
+                <b>{directive.status === "COMPLETED"
+                  ? "CEMENT +1"
+                  : directive.status === "SYNCING"
+                    ? "AWAITING LIVE DATA"
+                    : `+${directive.xp} XP • ${directive.cement} CEMENT`}</b>
+              </div>
+            </article>
+          ))}
 
           <article className="daily-command-slot class">
-            <small>02 // CLASS ACTION</small>
+            <small>04 // CLASS DIRECTIVE</small>
             <strong>{classDirective?.title || "CLASS DIRECTIVE UNAVAILABLE"}</strong>
             <p>{classDirective?.objective || "The class catalogue is synchronizing. Retry without resetting progression."}</p>
             <div>
@@ -2540,7 +2528,7 @@ export function DailySystemBriefing({
           </article>
 
           <article className="daily-command-slot progress">
-            <small>03 // FUEL & RECOVERY</small>
+            <small>05 // PROGRESSION & RECOVERY</small>
             <strong>{recovery ? recovery.target : fuel.goal + " • LOG YOUR NEXT MEAL"}</strong>
             <p>
               {recovery ? recovery.task : fuel.calorieTarget > 0
@@ -4800,6 +4788,8 @@ export function QuestPage({
                 key,
               assignedFor:
                 date,
+              pillar:
+                quest.pillar,
             })
         );
 
