@@ -6281,7 +6281,7 @@ export function QuestPage({
               profile.mustState[key];
 
             return (
-              <React.Fragment key={quest.id}>
+              <div className="must-quest-column" key={quest.id}>
               <MustCard
                 quest={quest}
                 state={state}
@@ -6356,7 +6356,7 @@ export function QuestPage({
                   }}
                 />
               )}
-              </React.Fragment>
+              </div>
             );
           }
         )}
