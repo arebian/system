@@ -4059,26 +4059,30 @@ export async function loadDailyCommandBrief({
     "daily-command:" + user.id + ":" + classPath + ":" +
       effectiveDate,
     async () => {
-      const {
-        data,
-        error,
-      } = await withCloudTimeout(
-        supabase.rpc(
-          "system_daily_command_brief_v1",
-          {
-            p_assigned_for:
-              effectiveDate,
-          }
+      const [briefResult, pillarResult] = await Promise.all([
+        withCloudTimeout(
+          supabase.rpc("system_daily_command_brief_v1", {
+            p_assigned_for: effectiveDate,
+          }),
+          SYSTEM_API_TIMEOUT_MS,
+          "DAILY_COMMAND_TIMEOUT"
         ),
-        SYSTEM_API_TIMEOUT_MS,
-        "DAILY_COMMAND_TIMEOUT"
-      );
+        withCloudTimeout(
+          supabase.rpc("system_daily_pillar_directives_v1", {
+            p_assigned_for: effectiveDate,
+          }),
+          SYSTEM_API_TIMEOUT_MS,
+          "DAILY_PILLAR_DIRECTIVES_TIMEOUT"
+        ),
+      ]);
 
-      if (error) {
-        throw error;
-      }
+      if (briefResult.error) throw briefResult.error;
+      if (pillarResult.error) throw pillarResult.error;
 
-      return data || null;
+      return {
+        ...(briefResult.data || {}),
+        pillar_directives: Array.isArray(pillarResult.data) ? pillarResult.data : [],
+      };
     }
   );
 }
