@@ -6227,6 +6227,36 @@ export function QuestPage({
               <MustCard
                 quest={quest}
                 state={state}
+                objectivesPanel={state?.backendQuestId ? (
+                  <QuestObjectivesPanel
+                    userQuestId={state.backendQuestId}
+                    pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
+                    identity={profile.identity}
+                    profile={profile}
+                    onProfileUpdated={applyAuthoritativeProfile}
+                    onParentCompleted={() => {
+                      const mustKey = date + "-" + quest.id;
+                      const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
+                      commitMustState({
+                        ...currentMustState,
+                        [mustKey]: {
+                          ...(currentMustState[mustKey] || {}),
+                          accepted: true,
+                          mandatory: true,
+                          completed: true,
+                          failed: false,
+                          penaltyApplied: false,
+                          penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
+                          name: quest.name,
+                          date,
+                          backendQuestId: state.backendQuestId,
+                          authoritative: true,
+                          syncStatus: "COMPLETED",
+                        },
+                      });
+                    }}
+                  />
+                ) : null}
                 syncStatus={
                   mustSync[
                     key
@@ -6268,36 +6298,7 @@ export function QuestPage({
                   )
                 }
               />
-              {state?.backendQuestId && (
-                <QuestObjectivesPanel
-                  userQuestId={state.backendQuestId}
-                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
-                  identity={profile.identity}
-                  profile={profile}
-                  onProfileUpdated={applyAuthoritativeProfile}
-                  onParentCompleted={() => {
-                    const mustKey = date + "-" + quest.id;
-                    const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
-                    commitMustState({
-                      ...currentMustState,
-                      [mustKey]: {
-                        ...(currentMustState[mustKey] || {}),
-                        accepted: true,
-                        mandatory: true,
-                        completed: true,
-                        failed: false,
-                        penaltyApplied: false,
-                        penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
-                        name: quest.name,
-                        date,
-                        backendQuestId: state.backendQuestId,
-                        authoritative: true,
-                        syncStatus: "COMPLETED",
-                      },
-                    });
-                  }}
-                />
-              )}
+
               </div>
             );
           }
@@ -7231,7 +7232,9 @@ export function MustCard({
   retrySync,
   syncStatus = "SYNCING",
   proofType = "HONOR",
+  objectivesPanel = null,
 }) {
+  const [questExpanded, setQuestExpanded] = useState(false);
   const [now, setNow] =
     useState(
       Date.now()
@@ -7488,27 +7491,24 @@ export function MustCard({
                 RETRY DIRECTIVE SYNC
               </button>
             ) : (
-              <button
-                data-sfx="success"
-                type="button"
-                disabled={
-                  syncing ||
-                  !ready ||
-                  Boolean(quest.pillar) ||
-                  Boolean(
-                    state?.completed ||
-                    state?.failed ||
-                    state?.penaltyApplied
-                  )
-                }
-                onClick={complete}
-              >
-                {quest.pillar
-                  ? "COMPLETE THE THREE MISSIONS BELOW"
-                  : syncing
-                    ? "SYNCHRONIZING..."
-                    : "SUBMIT COMPLETION"}
-              </button>
+              !quest.pillar && (
+                <button
+                  data-sfx="success"
+                  type="button"
+                  disabled={
+                    syncing ||
+                    !ready ||
+                    Boolean(
+                      state?.completed ||
+                      state?.failed ||
+                      state?.penaltyApplied
+                    )
+                  }
+                  onClick={complete}
+                >
+                  {syncing ? "SYNCHRONIZING..." : "SUBMIT COMPLETION"}
+                </button>
+              )
             )}
           </>
         )}
@@ -7530,6 +7530,21 @@ export function MustCard({
         >
           FAILED — PENALTY APPLIED
         </button>
+      )}
+
+      {quest.pillar && (
+        <div className="must-quest-expansion">
+          <button
+            type="button"
+            className="must-open-quest"
+            aria-expanded={questExpanded}
+            onClick={() => setQuestExpanded(open => !open)}
+          >
+            {questExpanded ? "CLOSE QUEST" : "OPEN QUEST"}
+            <span>{questExpanded ? "−" : "+"}</span>
+          </button>
+          {questExpanded && objectivesPanel}
+        </div>
       )}
     </article>
   );
