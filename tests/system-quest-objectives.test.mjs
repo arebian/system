@@ -14,6 +14,27 @@ test("No Zero Day recommendations include physical, intellect and primary identi
   assert.deepEqual(result.map(item=>item.pillar),["PHYSICAL","INTELLECT","WEALTH"]);
 });
 
+test("each of the three daily quest pillars receives only its own three missions", () => {
+  const focusedTasks = [
+    {id:"d1",title:"D1",pillar:"DISCIPLINE",difficulty:"EASY",duration_minutes:5},
+    {id:"d2",title:"D2",pillar:"DISCIPLINE",difficulty:"NORMAL",duration_minutes:10},
+    {id:"d3",title:"D3",pillar:"DISCIPLINE",difficulty:"NORMAL",duration_minutes:15},
+    {id:"p1",title:"P1",pillar:"PHYSICAL",difficulty:"EASY",duration_minutes:5},
+    {id:"p2",title:"P2",pillar:"PHYSICAL",difficulty:"NORMAL",duration_minutes:10},
+    {id:"p3",title:"P3",pillar:"PHYSICAL",difficulty:"NORMAL",duration_minutes:15},
+    {id:"m1",title:"M1",pillar:"MENTAL",difficulty:"EASY",duration_minutes:5},
+    {id:"m2",title:"M2",pillar:"MENTAL",difficulty:"NORMAL",duration_minutes:10},
+    {id:"m3",title:"M3",pillar:"MENTAL",difficulty:"NORMAL",duration_minutes:15},
+    {id:"w1",title:"W1",pillar:"WEALTH",difficulty:"NORMAL",duration_minutes:10},
+  ];
+
+  for (const pillar of ["DISCIPLINE", "PHYSICAL", "MENTAL"]) {
+    const result = recommendQuestObjectives(focusedTasks, {primary:"WEALTH"}, {level:1}, 3, pillar);
+    assert.equal(result.length, 3, pillar + " should receive exactly three missions");
+    assert.ok(result.every(item => item.pillar === pillar), pillar + " must not receive another pillar's tasks");
+  }
+});
+
 test("recommendations never repeat a pillar", () => {
   const result = recommendQuestObjectives(tasks,{primary:"PHYSICAL",secondary:["INTELLECT"]},{level:1},3);
   assert.equal(new Set(result.map(item=>item.pillar)).size,result.length);
