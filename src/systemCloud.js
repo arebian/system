@@ -622,6 +622,26 @@ export async function fetchQuestTaskLibrary() {
   return data || [];
 }
 
+export async function fetchDailyPillarQuest(pillar, assignedFor) {
+  const target = String(pillar || "").trim().toUpperCase();
+  const date = String(assignedFor || "").trim();
+  if (!target || !date) return null;
+
+  const { data, error } = await supabase
+    .from("user_quests")
+    .select("id,category,status,assigned_for,expires_at,accepted_at,created_at,xp_penalty,metadata")
+    .eq("assigned_for", date)
+    .filter("metadata->>pillar_quest", "eq", "true")
+    .filter("metadata->>target_pillar", "eq", target)
+    .in("status", ["ACCEPTED", "COMPLETED"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+
 export async function fetchPillarCement(pillar) {
   const target = String(pillar || "").trim().toUpperCase();
   if (!target) return 0;
