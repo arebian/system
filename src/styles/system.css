@@ -18774,28 +18774,56 @@ input[type="range"]::-moz-range-thumb {
 }
 
 
-/* Keep each mandatory directive attached to its own three-mission panel.
-   The grid now lays out three complete pillar columns, not six unrelated cells. */
+/* One pillar = one visual quest card. The parent directive and its three
+   missions are a single continuous surface, not two separate cards. */
 .must-grid > .must-quest-column {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
   align-self: start !important;
-  gap: 12px !important;
+  gap: 0 !important;
   min-width: 0 !important;
-  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-bg);
+  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+}
+.must-quest-column > .must-card.card3d {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 20px !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  transform: none !important;
 }
-.must-quest-column > .must-card,
+.must-quest-column > .must-card.card3d::before,
+.must-quest-column > .must-card.card3d::after {
+  display: none !important;
+}
 .must-quest-column > .quest-objectives-panel {
   width: 100%;
   min-width: 0;
-}
-.must-quest-column > .quest-objectives-panel {
   margin: 0 !important;
+  padding: 16px 20px 20px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--panel-bg) 94%, var(--accent) 6%);
+  box-shadow: none;
+}
+.must-quest-column .quest-objectives-list {
+  display: grid;
+  gap: 10px;
+}
+.must-quest-column .quest-objective-item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-bg) 90%, var(--accent) 10%);
 }
 @media (max-width: 1100px) {
   .must-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
