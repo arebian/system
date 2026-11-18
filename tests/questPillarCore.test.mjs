@@ -26,6 +26,13 @@ test("a daily quest accepts exactly its own three mission tasks", () => {
   assert.equal(questTasksMatchPillar(rows, ids, "DISCIPLINE"), true);
 });
 
+test("partial replacement batches remain valid when every mission matches the pillar", () => {
+  assert.equal(questTasksMatchPillar([
+    { id: "p2", pillar: "PHYSICAL" },
+    { id: "p3", pillar: "PHYSICAL" },
+  ], ["p2", "p3"], "PHYSICAL"), true);
+});
+
 test("a daily quest rejects mixed or cross-pillar mission tasks", () => {
   const ids = ["m1", "m2", "m3"];
   assert.equal(questTasksMatchPillar([
