@@ -19,7 +19,6 @@ import { canReuseApprovedReview } from "./systemReviewCore.js";
 import { normalizeReviewProof } from "../supabase/functions/_shared/questReviewCore.js";
 import { assignBossOnBackend, bootstrapAuthoritativeProfile, hydrateStructuredProfile, setBossObjectiveOnBackend, resolveBossOnBackend, evaluateAdaptiveQuest, acceptMustQuestOnBackend, updateRoutineOnBackend, routineCheckinOnBackend, completeQuestByTitleOnBackend, applyExpiredQuestPenaltiesOnBackend, uploadProofFile, loadAttributeCredits, allocateAttributeCreditOnBackend, startGpsSessionOnBackend, finishGpsWorkoutOnBackend, finishGpsSessionOnBackend, loadTrainingCatalog, uploadProofImage, submitProofRecordOnBackend, submitSkillAttemptOnBackend, saveLearningRecord, countLearningRecordsForSkill, evaluateSkillOnBackend, addPerformanceLogOnBackend, addWealthLogOnBackend, updateGoalProgressOnBackend, claimGoalOnBackend, createGoalOnBackend, addCustomInventoryOnBackend, claimRewardOnBackend, setInventoryStateOnBackend, refreshProgressionUnlocksOnBackend, equipTitleOnBackend, loadDailyCommandBrief, saveCloudPreferences, startTimedWorkoutOnBackend, completeTimedWorkoutOnBackend, completeWorkoutOnBackend } from "./systemCloud.js";
 import { buildQuestActionKey, getQuestProofType, mustStateMatchesQuest, getServerClockOffsetMs, isMustStateReady, QUEST_PROOF_LABELS } from "./systemQuestCore.js";
-import { normalizeDailyPillarDirectives } from "./systemDailyCommandCore.js";
 import { createPortal } from "react-dom";
 import { calculateClassAlignment, getClassAttributeBlueprint, sortAttributesForClass, normalizeAttributeCredit, getAttributeTier } from "./systemAttributesCore.js";
 import { getWorkoutVerificationMode, WORKOUT_VERIFICATION_MODES, buildTimedWorkoutPlan, getTimedWorkoutCountdown, getTimedWorkoutPhase } from "./systemWorkoutTimer.js";
@@ -2448,9 +2447,6 @@ export function DailySystemBriefing({
   const fuel = normalizeFuelState(profile.fuel);
   const fuelToday = summarizeFuelDay(fuel.logs[todayKey()], fuel.calorieTarget, fuel.proteinTarget);
   const recovery = awareness.recoveryDirective;
-  const pillarDirectives = normalizeDailyPillarDirectives(
-    commandReady ? dailyCommand : null
-  );
   const classDirective =
     commandReady
       ? dailyCommand.class_directive ||
@@ -2495,27 +2491,15 @@ export function DailySystemBriefing({
 
       {commandReady ? (
         <div className="daily-command-grid">
-          {pillarDirectives.map((directive, index) => (
-            <article className={`daily-command-slot pillar ${directive.pillar.toLowerCase()}`} key={directive.pillar}>
-              <small>{String(index + 1).padStart(2, "0")} // {directive.pillar} PILLAR</small>
-              <strong>{directive.title}</strong>
-              <p>{directive.objective}</p>
-              <div>
-                <span>{directive.status === "COMPLETED"
-                  ? "QUEST APPROVED"
-                  : directive.status === "FAILED"
-                    ? "QUEST FAILED"
-                    : directive.status === "SYNCING"
-                      ? "SYNCHRONIZING"
-                      : `${directive.completedMissions} / 3 MISSIONS APPROVED`}</span>
-                <b>{directive.status === "COMPLETED"
-                  ? `CEMENT ${directive.cement}`
-                  : directive.status === "SYNCING"
-                    ? "AWAITING LIVE DATA"
-                    : `+${directive.xp} XP • ${directive.cement} CEMENT`}</b>
-              </div>
-            </article>
-          ))}
+          <article className="daily-command-slot pillar-summary">
+            <small>01 // DAILY QUEST STRUCTURE</small>
+            <strong>THREE PILLARS. THREE QUESTS.</strong>
+            <p>Discipline, Physical and Mental. Each quest contains three actionable missions. Complete all nine missions to earn approval and build your pillars.</p>
+            <div>
+              <span>3 MAIN QUESTS • 9 MISSIONS</span>
+              <b>ONE QUEST PER PILLAR</b>
+            </div>
+          </article>
 
           <article className="daily-command-slot class">
             <small>04 // CLASS DIRECTIVE</small>
