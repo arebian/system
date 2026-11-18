@@ -18803,3 +18803,13 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 760px) {
   .must-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* Daily Command explains the three-quest structure without duplicating the
+   interactive quest cards shown on the Quest Board. */
+.daily-command-slot.pillar-summary {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--panel-bg) 90%, var(--accent) 10%);
+}
+.daily-command-slot.pillar-summary strong {
+  letter-spacing: .04em;
+}
