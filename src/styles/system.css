@@ -18772,3 +18772,34 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 800px) {
   .app.light[class*="class-"] { background-attachment: scroll; }
 }
+
+
+/* Keep each mandatory directive attached to its own three-mission panel.
+   The grid now lays out three complete pillar columns, not six unrelated cells. */
+.must-grid > .must-quest-column {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  align-self: start !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.must-quest-column > .must-card,
+.must-quest-column > .quest-objectives-panel {
+  width: 100%;
+  min-width: 0;
+}
+.must-quest-column > .quest-objectives-panel {
+  margin: 0 !important;
+}
+@media (max-width: 1100px) {
+  .must-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 760px) {
+  .must-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
