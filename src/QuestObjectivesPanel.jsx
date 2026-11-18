@@ -225,10 +225,10 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
   return (
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
-        <div><small>QUEST EXPANSION // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>THREE PILLAR MISSIONS</h4></div>
+        <div><small>MISSION LIST // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>{String(pillar || "PILLAR").toUpperCase()} MISSIONS</h4></div>
         <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"} · {pillarCement} CEMENT</span>
       </div>
-      <p>All three missions strengthen this quest's pillar. The other daily quests build different pillars. AI recommends; you decide.</p>
+      <p>These three missions belong exclusively to the {String(pillar || "selected").toUpperCase()} pillar. Complete all three to approve this main quest. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
         <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
           {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING THREE OBJECTIVES…" : "RETRY GENERATING 3 OBJECTIVES"}
