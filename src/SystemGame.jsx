@@ -4479,7 +4479,7 @@ export function QuestPage({
         "DISCIPLINE",
       pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
-      task: "Make today count by completing the three Discipline missions below. The main quest is approved automatically after all three pass review.",
+      task: "Open the Discipline quest and complete its three Discipline missions. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "physical",
@@ -4495,7 +4495,7 @@ export function QuestPage({
           profile.path +
           "must2"
       ),
-      task: "Build the Physical pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
+      task: "Open the Physical quest and complete its three Physical missions. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "focus",
@@ -4508,7 +4508,7 @@ export function QuestPage({
           profile.path +
           "must3"
       ),
-      task: "Build the Mental pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
+      task: "Open the Mental quest and complete its three Mental missions. The main quest is approved automatically after all three pass review.",
     },
   ];
 
@@ -6238,7 +6238,7 @@ export function QuestPage({
 
           <div className="pillar-quest-detail-header">
             <div>
-              <small>{openedPillarQuest.pillar} PILLAR // DAILY MAIN QUEST</small>
+              <small>{openedPillarQuest.pillar} QUEST // DAILY MAIN QUEST</small>
               <h2 id="pillar-quest-detail-title">{openedPillarQuest.name}</h2>
               <blockquote>"{openedPillarQuest.message}"</blockquote>
             </div>
