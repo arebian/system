@@ -6206,8 +6206,8 @@ export function QuestPage({
       </article>
 
       <SectionLabel
-        number="03"
-        title="MUST QUESTS"
+        number="01"
+        title="THREE PILLAR QUESTS"
         danger
       />
 
