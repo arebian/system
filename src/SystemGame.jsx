@@ -4497,12 +4497,15 @@ export function QuestPage({
       id: "discipline",
       type:
         "DISCIPLINE",
+      pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
+      task: "Make today count by completing the three Discipline missions below. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "physical",
       type:
         "PHYSICAL",
+      pillar: "PHYSICAL",
       ...pick(
         MUST_PHYSICAL[
           profile.path
@@ -4512,17 +4515,20 @@ export function QuestPage({
           profile.path +
           "must2"
       ),
+      task: "Build the Physical pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "focus",
       type:
         "FOCUS",
+      pillar: "MENTAL",
       ...pick(
         MUST_FOCUS,
         date +
           profile.path +
           "must3"
       ),
+      task: "Build the Mental pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
   ];
 
@@ -4617,6 +4623,8 @@ export function QuestPage({
                     key,
                   assignedFor:
                     date,
+                  pillar:
+                    quest.pillar,
                 })
             );
 
@@ -6328,12 +6336,34 @@ export function QuestPage({
                   )
                 }
               />
-              {state?.backendQuestId && quest.name === "NO ZERO DAY" && (
+              {state?.backendQuestId && (
                 <QuestObjectivesPanel
                   userQuestId={state.backendQuestId}
+                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
                   identity={profile.identity}
                   profile={profile}
                   onProfileUpdated={applyAuthoritativeProfile}
+                  onParentCompleted={() => {
+                    const mustKey = date + "-" + quest.id;
+                    const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
+                    commitMustState({
+                      ...currentMustState,
+                      [mustKey]: {
+                        ...(currentMustState[mustKey] || {}),
+                        accepted: true,
+                        mandatory: true,
+                        completed: true,
+                        failed: false,
+                        penaltyApplied: false,
+                        penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
+                        name: quest.name,
+                        date,
+                        backendQuestId: state.backendQuestId,
+                        authoritative: true,
+                        syncStatus: "COMPLETED",
+                      },
+                    });
+                  }}
                 />
               )}
               </React.Fragment>
@@ -7696,6 +7726,7 @@ export function MustCard({
                 disabled={
                   syncing ||
                   !ready ||
+                  Boolean(quest.pillar) ||
                   Boolean(
                     state?.completed ||
                     state?.failed ||
@@ -7704,9 +7735,11 @@ export function MustCard({
                 }
                 onClick={complete}
               >
-                {syncing
-                  ? "SYNCHRONIZING..."
-                  : "SUBMIT COMPLETION"}
+                {quest.pillar
+                  ? "COMPLETE THE THREE MISSIONS BELOW"
+                  : syncing
+                    ? "SYNCHRONIZING..."
+                    : "SUBMIT COMPLETION"}
               </button>
             )}
           </>

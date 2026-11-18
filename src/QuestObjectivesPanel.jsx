@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchQuestTaskLibrary, fetchQuestObjectives, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
+import { fetchQuestTaskLibrary, fetchQuestObjectives, fetchPillarCement, proposeQuestObjectivesOnBackend, decideQuestObjectiveOnBackend, completeQuestObjectiveOnBackend, bootstrapAuthoritativeProfile, fetchQuestObjectiveTimer, startQuestObjectiveTimer, finishQuestObjectiveTimer, uploadProofImage } from "./systemCloud.js";
 import { recommendQuestObjectives, objectiveProposalSummary } from "./systemQuestObjectivesCore.js";
 import { reviewQuestObjectiveOnBackend } from "./systemLivingApi.js";
 
-export default function QuestObjectivesPanel({ userQuestId, identity, profile, onProfileUpdated }) {
+export default function QuestObjectivesPanel({ userQuestId, pillar, identity, profile, onProfileUpdated, onParentCompleted }) {
   const [tasks, setTasks] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [status, setStatus] = useState("LOADING");
@@ -15,6 +15,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const [photoPaths, setPhotoPaths] = useState({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [clockNow, setClockNow] = useState(Date.now());
+  const [pillarCement, setPillarCement] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +31,14 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     return () => { active = false; };
   }, [userQuestId]);
 
+
+  useEffect(() => {
+    let active = true;
+    fetchPillarCement(pillar)
+      .then(value => { if (active) setPillarCement(value); })
+      .catch(error => { if (active) setMessage(error?.message || "PILLAR_PROGRESS_LOAD_FAILED"); });
+    return () => { active = false; };
+  }, [pillar]);
 
   useEffect(() => {
     const timer = setInterval(() => setClockNow(Date.now()), 1000);
@@ -49,14 +58,12 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
   const recommendationLimit = Math.max(0, 3 - lockedObjectives.length);
   const recommendations = useMemo(() => {
     const unavailableTaskIds = new Set(objectives.map(item => item.task_id).filter(Boolean));
-    const lockedPillars = new Set(objectives
-      .filter(item => item.status === "ACCEPTED" || item.status === "COMPLETED")
-      .map(item => item.pillar));
+    const targetPillar = String(pillar || "").toUpperCase();
     const availableTasks = tasks.filter(task =>
-      !unavailableTaskIds.has(task.id) && !lockedPillars.has(task.pillar)
+      !unavailableTaskIds.has(task.id) && String(task.pillar || "").toUpperCase() === targetPillar
     );
-    return recommendQuestObjectives(availableTasks, identity, profile, recommendationLimit);
-  }, [tasks, identity, profile, objectives, recommendationLimit]);
+    return recommendQuestObjectives(availableTasks, identity, profile, recommendationLimit, targetPillar);
+  }, [tasks, identity, profile, objectives, recommendationLimit, pillar]);
   const visibleObjectives = objectives.filter(item => item.status !== "REJECTED");
   const summary = objectiveProposalSummary(visibleObjectives);
 
@@ -76,7 +83,7 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
     } finally { setBusy(false); }
   }, [userQuestId, recommendations, recommendationLimit, busy]);
 
-  // First-time NO ZERO DAY setup: generate the initial three recommendations
+  // First-time pillar quest setup: generate the initial three recommendations
   // automatically once the task library and saved objective state are loaded.
   // Rejected proposals remain in history, so replacements stay player-initiated.
   const autoGenerationAttemptedForRef = useRef("");
@@ -200,21 +207,28 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
       ));
       const cloudProfile = await bootstrapAuthoritativeProfile();
       if (cloudProfile && onProfileUpdated) onProfileUpdated(cloudProfile);
-      setMessage(result?.duplicate ? "This objective was already recorded." : "Objective completed. XP was awarded by the System.");
+      if (result?.parent_completed && onParentCompleted) onParentCompleted();
+      const updatedCement = await fetchPillarCement(pillar);
+      setPillarCement(updatedCement);
+      setMessage(result?.duplicate
+        ? "This objective was already recorded."
+        : result?.parent_completed
+          ? "Third mission approved. Main quest complete. +1 cement added to the " + String(pillar).toUpperCase() + " pillar."
+          : "Objective completed. XP was awarded by the System.");
     } catch (error) {
       setMessage(error?.message || "OBJECTIVE_COMPLETION_FAILED");
     } finally { setBusy(false); }
-  }, [reviewResults, busy, onProfileUpdated]);
+  }, [reviewResults, busy, onProfileUpdated, onParentCompleted, pillar]);
 
   if (!userQuestId) return null;
 
   return (
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
-        <div><small>QUEST EXPANSION // SYSTEM AI</small><h4>MINI-QUEST OBJECTIVES</h4></div>
-        <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"}</span>
+        <div><small>QUEST EXPANSION // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>THREE PILLAR MISSIONS</h4></div>
+        <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"} · {pillarCement} CEMENT</span>
       </div>
-      <p>Three focused actions: physical development, intellectual development and a task aligned with your identity. AI recommends; you decide.</p>
+      <p>All three missions strengthen this quest's pillar. The other daily quests build different pillars. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
         <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
           {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING THREE OBJECTIVES…" : "RETRY GENERATING 3 OBJECTIVES"}
@@ -319,13 +333,13 @@ export default function QuestObjectivesPanel({ userQuestId, identity, profile, o
               )}
             </article>
           ))}
-          {recommendationLimit > 0 && summary.proposed === 0 && summary.completed === 0 && (
+          {recommendationLimit > 0 && summary.proposed === 0 && (
             <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || busy} onClick={generate}>
               {busy ? "GENERATING…" : "GENERATE " + recommendationLimit + " REPLACEMENT OBJECTIVE" + (recommendationLimit === 1 ? "" : "S")}
             </button>
           )}
           {summary.proposed === 0 && summary.allAccepted && (
-            <small className="quest-objectives-confirmed">ALL THREE OBJECTIVES APPROVED — COMPLETE EACH ONE TO UNLOCK THE PARENT QUEST.</small>
+            <small className="quest-objectives-confirmed">ALL THREE MISSIONS ACCEPTED — COMPLETE EACH ONE FOR AUTOMATIC QUEST APPROVAL.</small>
           )}
         </div>
       )}

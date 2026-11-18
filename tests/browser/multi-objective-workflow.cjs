@@ -12,11 +12,12 @@ const { chromium } = require('playwright');
  let rows=[];
  const tasks=[
   {id:'timer-task',pillar:'PHYSICAL',title:'FOCUSED MOVEMENT',objective:'Complete a focused movement session and record what improved.',difficulty:'NORMAL',duration_minutes:1,xp_reward:20,proof_type:'TIMER'},
-  {id:'photo-task',pillar:'INTELLECT',title:'READ AND CAPTURE',objective:'Read a short section and capture a useful takeaway.',difficulty:'NORMAL',duration_minutes:10,xp_reward:25,proof_type:'PHOTO'},
-  {id:'note-task',pillar:'DISCIPLINE',title:'PLAN TOMORROW',objective:'Prepare next-day priorities and record the result.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'},
-  {id:'social-task',pillar:'SOCIAL',title:'REACH OUT',objective:'Make a thoughtful connection and record the outcome.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'}
+  {id:'photo-task',pillar:'PHYSICAL',title:'READ AND CAPTURE',objective:'Complete the movement session and capture one measurable result.',difficulty:'NORMAL',duration_minutes:2,xp_reward:25,proof_type:'PHOTO'},
+  {id:'note-task',pillar:'PHYSICAL',title:'PLAN TOMORROW',objective:'Complete the movement sequence and record the result.',difficulty:'NORMAL',duration_minutes:5,xp_reward:15,proof_type:'NOTE'},
+  {id:'social-task',pillar:'PHYSICAL',title:'RECOVERY WALK',objective:'Complete a recovery walk and record the duration.',difficulty:'NORMAL',duration_minutes:15,xp_reward:15,proof_type:'NOTE'}
  ];
  export async function fetchQuestTaskLibrary(){return tasks;}
+ export async function fetchPillarCement(){return 0;}
  export async function fetchQuestObjectives(){return rows;}
  export async function proposeQuestObjectivesOnBackend({taskIds}){const proposed=taskIds.map(id=>{const t=tasks.find(x=>x.id===id);return {id:'objective-'+id,task_id:id,pillar:t.pillar,title_snapshot:t.title,objective_snapshot:t.objective,difficulty:t.difficulty,duration_minutes:t.duration_minutes,xp_reward:t.xp_reward,proof_type:t.proof_type,status:'PROPOSED'};});rows=[...rows.filter(x=>x.status==='ACCEPTED'||x.status==='COMPLETED'),...proposed];return {objectives:rows};}
  export async function decideQuestObjectiveOnBackend({objectiveId,decision}){const status=decision==='ACCEPT'?'ACCEPTED':'REJECTED';rows=rows.map(x=>x.id===objectiveId?{...x,status}:x);return {status};}
@@ -24,7 +25,7 @@ const { chromium } = require('playwright');
  export async function startQuestObjectiveTimer(id){const item=rows.find(x=>x.id===id);const session={id:'timer-'+id,objective_id:id,status:'RUNNING',started_at:new Date(Date.now()-item.duration_minutes*60000-2000).toISOString(),elapsed_seconds:0};window.qaTimers={...(window.qaTimers||{}),[id]:session};return session;}
  export async function finishQuestObjectiveTimer(id){const session=Object.values(window.qaTimers||{}).find(x=>x.id===id);const done={...session,status:'COMPLETED',elapsed_seconds:session?60:0};window.qaTimers={...window.qaTimers,[session.objective_id]:done};return {session:done};}
  export async function uploadProofImage(file){window.qaUploadedFile={name:file.name,type:file.type};return {path:'qa-private/'+file.name};}
- export async function completeQuestObjectiveOnBackend({objectiveId}){rows=rows.map(x=>x.id===objectiveId?{...x,status:'COMPLETED'}:x);window.qaXpClaims=(window.qaXpClaims||0)+1;return {objective:rows.find(x=>x.id===objectiveId)};}
+ export async function completeQuestObjectiveOnBackend({objectiveId}){rows=rows.map(x=>x.id===objectiveId?{...x,status:'COMPLETED'}:x);window.qaXpClaims=(window.qaXpClaims||0)+1;return {objective:rows.find(x=>x.id===objectiveId),parent_completed:false};}
  export async function bootstrapAuthoritativeProfile(){return {id:'qa-profile'};}
  export async function hydrateStructuredProfile(x){return x;}
  `;

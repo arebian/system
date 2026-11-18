@@ -118,6 +118,65 @@ test("multi-objective quests enforce proposals, replacement, timer proof, review
     from public.quest_library where code='QA_NO_ZERO_DAY' returning id`)).rows[0].id;
   await db.exec(`select set_config('request.jwt.claim.sub','${user}',false);`);
   await assert.rejects(db.query("select public.system_propose_quest_objectives($1,$2::uuid[],'{}')", [otherParent,initialIds]), /QUEST_NOT_FOUND/);
+
+  // Pillar quests must contain three missions from their assigned pillar,
+  // and award exactly one cement unit only after all three reviewed completions.
+  const pillarTaskRows = (await db.query(`
+    insert into public.quest_task_library(code,title,objective,pillar,difficulty,duration_minutes,min_level,xp_reward,proof_type)
+    values
+      ('QA_PILLAR_A','PHYSICAL A','Complete physical mission A.','PHYSICAL','NORMAL',5,1,5,'NOTE'),
+      ('QA_PILLAR_B','PHYSICAL B','Complete physical mission B.','PHYSICAL','NORMAL',5,1,5,'NOTE'),
+      ('QA_PILLAR_C','PHYSICAL C','Complete physical mission C.','PHYSICAL','NORMAL',5,1,5,'NOTE'),
+      ('QA_PILLAR_WRONG','SOCIAL WRONG','Complete a social mission.','SOCIAL','NORMAL',5,1,5,'NOTE')
+    returning id,code
+  `)).rows;
+  const pillarTaskIds = Object.fromEntries(pillarTaskRows.map(row => [row.code,row.id]));
+  const pillarLibraryId = (await db.query(`
+    insert into public.quest_library(code,title,objective,category,quest_type,difficulty,xp_reward,min_level,metadata)
+    values('QA_PILLAR_QUEST','PILLAR QUEST','Build one identity pillar.','PHYSICAL','DAILY','NORMAL',50,1,'{}')
+    returning id
+  `)).rows[0].id;
+  const pillarParent = (await db.query(`
+    insert into public.user_quests(
+      user_id,quest_id,assigned_for,quest_type,title_snapshot,objective_snapshot,category,xp_reward,status,metadata
+    )
+    values($1,$2,current_date,'DAILY','PILLAR QUEST','Build the physical pillar.','PHYSICAL',50,'ASSIGNED',
+      '{"pillar_quest":true,"target_pillar":"PHYSICAL"}'::jsonb)
+    returning id
+  `, [user,pillarLibraryId])).rows[0].id;
+  await assert.rejects(
+    db.query("select public.system_propose_quest_objectives($1,$2::uuid[],'{}')", [
+      pillarParent,
+      [pillarTaskIds.QA_PILLAR_A,pillarTaskIds.QA_PILLAR_B,pillarTaskIds.QA_PILLAR_WRONG],
+    ]),
+    /OBJECTIVE_PILLAR_MISMATCH/
+  );
+  const pillarProposal = (await db.query(
+    "select public.system_propose_quest_objectives($1,$2::uuid[],'{}') as value",
+    [pillarParent,[pillarTaskIds.QA_PILLAR_A,pillarTaskIds.QA_PILLAR_B,pillarTaskIds.QA_PILLAR_C]]
+  )).rows[0].value;
+  assert.equal(pillarProposal.objectives.length,3);
+  assert.ok(pillarProposal.objectives.every(row => row.pillar === "PHYSICAL"));
+  for (const objective of pillarProposal.objectives) {
+    await db.query("select public.system_decide_quest_objective($1,'ACCEPT')",[objective.id]);
+  }
+  await assert.rejects(
+    db.query("update public.user_quests set status='COMPLETED' where id=$1",[pillarParent]),
+    /QUEST_OBJECTIVES_INCOMPLETE/
+  );
+  for (const objective of pillarProposal.objectives) {
+    const reviewId = await addReview(user,objective.id);
+    await completeWith(objective.id,reviewId);
+  }
+  const autoCompletedParent = (await db.query(
+    "select status from public.user_quests where id=$1",[pillarParent]
+  )).rows[0].status;
+  assert.equal(autoCompletedParent,"COMPLETED","the third approved mission must auto-complete the parent quest");
+  const cement = (await db.query(
+    "select cement from public.user_pillar_progress where user_id=$1 and pillar='PHYSICAL'",
+    [user]
+  )).rows[0].cement;
+  assert.equal(cement,1,"a completed pillar quest adds exactly one cement unit");
 });
 
 test("adaptive objective recommendations respect identity, balance, recency and three-task limit", () => {
@@ -140,6 +199,15 @@ test("adaptive objective recommendations respect identity, balance, recency and 
   const recent = [{ title: "Move", date: new Date().toISOString() }];
   const withoutRepeat = recommendQuestObjectives(tasks, identity, { level: 2, recentCompletionRate: 50, questLog: recent }, 3);
   assert.ok(!withoutRepeat.some(row => row.title === "Move"));
+  const focused = recommendQuestObjectives([
+    { id: "f1", title: "Focus 1", pillar: "PHYSICAL", difficulty: "EASY", duration_minutes: 5, proof_type: "NOTE" },
+    { id: "f2", title: "Focus 2", pillar: "PHYSICAL", difficulty: "NORMAL", duration_minutes: 10, proof_type: "NOTE" },
+    { id: "f3", title: "Focus 3", pillar: "PHYSICAL", difficulty: "HARD", duration_minutes: 15, proof_type: "METRIC" },
+    { id: "x1", title: "Other pillar", pillar: "SOCIAL", difficulty: "NORMAL", duration_minutes: 5, proof_type: "NOTE" },
+  ], identity, { level: 5, recentCompletionRate: 65 }, 3, "PHYSICAL");
+  assert.equal(focused.length,3);
+  assert.ok(focused.every(row => row.pillar === "PHYSICAL"), "all three missions in a pillar quest must target the same pillar");
+  assert.equal(new Set(focused.map(row => row.id)).size,3,"a pillar quest must contain three distinct missions");
   const summary = objectiveProposalSummary([{ status: "ACCEPTED" }, { status: "PROPOSED" }, { status: "COMPLETED" }]);
   assert.deepEqual(summary, { total: 3, accepted: 1, proposed: 1, completed: 1, allAccepted: false });
 });

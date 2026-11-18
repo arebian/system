@@ -622,6 +622,18 @@ export async function fetchQuestTaskLibrary() {
   return data || [];
 }
 
+export async function fetchPillarCement(pillar) {
+  const target = String(pillar || "").trim().toUpperCase();
+  if (!target) return 0;
+  const { data, error } = await supabase
+    .from("user_pillar_progress")
+    .select("cement")
+    .eq("pillar", target)
+    .maybeSingle();
+  if (error) throw error;
+  return Number(data?.cement || 0);
+}
+
 export async function fetchQuestObjectives(userQuestId) {
   const { data, error } = await supabase
     .from("user_quest_objectives")
@@ -1675,6 +1687,7 @@ export async function acceptMustQuestOnBackend({
   durationSeconds = 86400,
   legacyKey = null,
   assignedFor = null,
+  pillar = null,
 }) {
   const normalizedTitle = String(title || "").trim();
   if (!normalizedTitle) {
@@ -1711,6 +1724,10 @@ export async function acceptMustQuestOnBackend({
                   legacyKey,
                 assigned_for:
                   effectiveDate,
+                pillar_quest:
+                  Boolean(pillar),
+                target_pillar:
+                  pillar ? String(pillar).toUpperCase() : null,
               },
             }
           ),
