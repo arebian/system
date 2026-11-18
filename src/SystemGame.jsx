@@ -4230,6 +4230,14 @@ export function QuestPage({
     setMustSync,
   ] = useState({});
 
+  const [openedPillarQuestId, setOpenedPillarQuestId] = useState(null);
+  const openedPillarDetailRef = useRef(null);
+
+  useEffect(() => {
+    if (!openedPillarQuestId) return;
+    openedPillarDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [openedPillarQuestId]);
+
   // Must Quest acceptance can finish while another Quest action is in
   // progress. Keep the newest profile snapshot so an asynchronous acceptance
   // never writes an older copy of the UI state back over a verified result.
@@ -4503,6 +4511,13 @@ export function QuestPage({
       task: "Build the Mental pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
     },
   ];
+
+  const openedPillarQuest = mustQuests.find(quest => quest.id === openedPillarQuestId) || null;
+  const openedPillarKey = openedPillarQuest ? date + "-" + openedPillarQuest.id : null;
+  const openedPillarState = openedPillarKey ? profile.mustState[openedPillarKey] : null;
+  const openedPillarSyncStatus = openedPillarKey
+    ? (mustSync[openedPillarKey] || (openedPillarState?.accepted && openedPillarState?.expiresAt ? "READY" : "SYNCING"))
+    : "SYNCING";
 
   useEffect(() => {
     let active = true;
@@ -6205,13 +6220,120 @@ export function QuestPage({
         </div>
       </article>
 
-      <SectionLabel
-        number="01"
-        title="THREE PILLAR QUESTS"
-        danger
-      />
+      {openedPillarQuest ? (
+        <section
+          ref={openedPillarDetailRef}
+          className="pillar-quest-detail"
+          key={date + "-" + openedPillarQuest.id}
+          aria-labelledby="pillar-quest-detail-title"
+        >
+          <button
+            type="button"
+            className="pillar-quest-back"
+            onClick={() => setOpenedPillarQuestId(null)}
+          >
+            <span>←</span>
+            BACK TO THREE QUESTS
+          </button>
 
-      <div className="must-grid">
+          <div className="pillar-quest-detail-header">
+            <div>
+              <small>{openedPillarQuest.pillar} PILLAR // DAILY MAIN QUEST</small>
+              <h2 id="pillar-quest-detail-title">{openedPillarQuest.name}</h2>
+              <blockquote>"{openedPillarQuest.message}"</blockquote>
+            </div>
+            <div className="pillar-quest-detail-reward">
+              <small>QUEST REWARD</small>
+              <strong>+{openedPillarQuest.xp} XP</strong>
+              <span>FAILURE −{openedPillarQuest.penalty} XP</span>
+            </div>
+          </div>
+
+          <div className="pillar-quest-contract">
+            <div>
+              <small>MAIN QUEST OBJECTIVE</small>
+              <p>{openedPillarQuest.task}</p>
+            </div>
+            <div className="pillar-quest-time">
+              <small>{isMustStateReady(openedPillarState) ? "TIME REMAINING" : "QUEST STATUS"}</small>
+              <strong>
+                {isMustStateReady(openedPillarState)
+                  ? formatMustTime(
+                      new Date(openedPillarState.expiresAt).getTime() -
+                      (wakeClock + Number(openedPillarState.serverOffsetMs || 0))
+                    )
+                  : openedPillarState?.completed
+                    ? "COMPLETED"
+                    : openedPillarState?.failed || openedPillarState?.penaltyApplied
+                      ? "FAILED"
+                      : openedPillarSyncStatus === "ERROR"
+                        ? "SYNC FAILED"
+                        : "SYNCHRONIZING"}
+              </strong>
+            </div>
+          </div>
+
+          <div className="pillar-quest-mission-map">
+            <small>{openedPillarQuest.pillar} QUEST // {openedPillarQuest.pillar} MISSIONS</small>
+            <p>
+              This is the {openedPillarQuest.pillar} quest. All three missions in this list belong to the {openedPillarQuest.pillar} pillar.
+              Completing all three is required for this main quest to be approved.
+            </p>
+          </div>
+
+          {openedPillarState?.backendQuestId ? (
+            <QuestObjectivesPanel
+              key={openedPillarState.backendQuestId}
+              userQuestId={openedPillarState.backendQuestId}
+              pillar={openedPillarQuest.pillar}
+              identity={profile.identity}
+              profile={profile}
+              onProfileUpdated={applyAuthoritativeProfile}
+              onParentCompleted={() => {
+                const mustKey = openedPillarKey;
+                const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
+                commitMustState({
+                  ...currentMustState,
+                  [mustKey]: {
+                    ...(currentMustState[mustKey] || {}),
+                    accepted: true,
+                    mandatory: true,
+                    completed: true,
+                    failed: false,
+                    penaltyApplied: false,
+                    penalty: Number(currentMustState[mustKey]?.penalty ?? openedPillarQuest.penalty ?? 0),
+                    name: openedPillarQuest.name,
+                    date,
+                    backendQuestId: openedPillarState.backendQuestId,
+                    authoritative: true,
+                    syncStatus: "COMPLETED",
+                  },
+                });
+              }}
+            />
+          ) : (
+            <div className="pillar-quest-sync-panel">
+              <strong>MISSION LINK NOT READY</strong>
+              <p>The System is still confirming this daily quest. Your missions will appear here when the server confirms the quest link.</p>
+              <button
+                type="button"
+                disabled={openedPillarSyncStatus === "SYNCING"}
+                onClick={() => retryMustSync(openedPillarQuest)}
+              >
+                {openedPillarSyncStatus === "SYNCING" ? "SYNCHRONIZING..." : "RETRY QUEST SYNC"}
+              </button>
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
+          <SectionLabel
+            number="01"
+            title="THREE PILLAR QUESTS"
+            danger
+          />
+
+          <div className="must-grid">
         {mustQuests.map(
           (quest) => {
             const key =
@@ -6227,36 +6349,7 @@ export function QuestPage({
               <MustCard
                 quest={quest}
                 state={state}
-                objectivesPanel={state?.backendQuestId ? (
-                  <QuestObjectivesPanel
-                    userQuestId={state.backendQuestId}
-                    pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
-                    identity={profile.identity}
-                    profile={profile}
-                    onProfileUpdated={applyAuthoritativeProfile}
-                    onParentCompleted={() => {
-                      const mustKey = date + "-" + quest.id;
-                      const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
-                      commitMustState({
-                        ...currentMustState,
-                        [mustKey]: {
-                          ...(currentMustState[mustKey] || {}),
-                          accepted: true,
-                          mandatory: true,
-                          completed: true,
-                          failed: false,
-                          penaltyApplied: false,
-                          penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
-                          name: quest.name,
-                          date,
-                          backendQuestId: state.backendQuestId,
-                          authoritative: true,
-                          syncStatus: "COMPLETED",
-                        },
-                      });
-                    }}
-                  />
-                ) : null}
+                onOpenQuest={() => setOpenedPillarQuestId(quest.id)}
                 syncStatus={
                   mustSync[
                     key
@@ -6430,6 +6523,9 @@ export function QuestPage({
           Rare events are not guaranteed. The scanner can be used up to 3 times per day with a 4-hour recalibration between scans. Finding an event locks further scans for that day.
         </p>
       </div>
+
+        </>
+      )}
 
       {pendingProof && (
         <QuestProofModal
@@ -7230,11 +7326,10 @@ export function MustCard({
   complete,
   fail,
   retrySync,
+  onOpenQuest,
   syncStatus = "SYNCING",
   proofType = "HONOR",
-  objectivesPanel = null,
 }) {
-  const [questExpanded, setQuestExpanded] = useState(false);
   const [now, setNow] =
     useState(
       Date.now()
@@ -7371,7 +7466,7 @@ export function MustCard({
       }
     >
       <div className="must-type">
-        {quest.type}
+        {quest.pillar || quest.type}
         {" • MANDATORY"}
       </div>
 
@@ -7482,7 +7577,7 @@ export function MustCard({
               </div>
             )}
 
-            {syncFailed ? (
+            {syncFailed && (
               <button
                 type="button"
                 className="must-retry-button"
@@ -7490,25 +7585,24 @@ export function MustCard({
               >
                 RETRY DIRECTIVE SYNC
               </button>
-            ) : (
-              !quest.pillar && (
-                <button
-                  data-sfx="success"
-                  type="button"
-                  disabled={
-                    syncing ||
-                    !ready ||
-                    Boolean(
-                      state?.completed ||
-                      state?.failed ||
-                      state?.penaltyApplied
-                    )
-                  }
-                  onClick={complete}
-                >
-                  {syncing ? "SYNCHRONIZING..." : "SUBMIT COMPLETION"}
-                </button>
-              )
+            )}
+            {!quest.pillar && !syncFailed && (
+              <button
+                data-sfx="success"
+                type="button"
+                disabled={
+                  syncing ||
+                  !ready ||
+                  Boolean(
+                    state?.completed ||
+                    state?.failed ||
+                    state?.penaltyApplied
+                  )
+                }
+                onClick={complete}
+              >
+                {syncing ? "SYNCHRONIZING..." : "SUBMIT COMPLETION"}
+              </button>
             )}
           </>
         )}
@@ -7533,18 +7627,14 @@ export function MustCard({
       )}
 
       {quest.pillar && (
-        <div className="must-quest-expansion">
-          <button
-            type="button"
-            className="must-open-quest"
-            aria-expanded={questExpanded}
-            onClick={() => setQuestExpanded(open => !open)}
-          >
-            {questExpanded ? "CLOSE QUEST" : "OPEN QUEST"}
-            <span>{questExpanded ? "−" : "+"}</span>
-          </button>
-          {questExpanded && objectivesPanel}
-        </div>
+        <button
+          type="button"
+          className="must-open-quest"
+          onClick={onOpenQuest}
+        >
+          OPEN QUEST
+          <span>→</span>
+        </button>
       )}
     </article>
   );
