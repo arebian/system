@@ -2509,7 +2509,7 @@ export function DailySystemBriefing({
                       ? "SYNCHRONIZING"
                       : `${directive.completedMissions} / 3 MISSIONS APPROVED`}</span>
                 <b>{directive.status === "COMPLETED"
-                  ? "CEMENT +1"
+                  ? `CEMENT ${directive.cement}`
                   : directive.status === "SYNCING"
                     ? "AWAITING LIVE DATA"
                     : `+${directive.xp} XP • ${directive.cement} CEMENT`}</b>
