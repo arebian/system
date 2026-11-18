@@ -19027,3 +19027,300 @@ input[type="range"]::-moz-range-thumb {
 .daily-command-slot.pillar-summary strong {
   letter-spacing: .04em;
 }
+
+
+/* =========================================================
+   SYSTEM TYPOGRAPHY UPGRADE — MANROPE + SPACE GROTESK
+   ========================================================= */
+:root {
+  --system-font-ui: "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --system-font-display: "Space Grotesk", "Manrope", sans-serif;
+}
+
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--system-font-ui);
+}
+
+.app {
+  font-family: var(--system-font-ui);
+  font-feature-settings: "ss01" on, "cv11" on;
+  font-optical-sizing: auto;
+}
+
+.app :is(h1, h2, h3, h4, h5, h6, .hero h1, .level-ring strong) {
+  font-family: var(--system-font-display);
+  letter-spacing: -0.035em;
+  font-weight: 650;
+  line-height: 1.12;
+}
+
+.brand strong {
+  letter-spacing: .22em;
+  font-weight: 800;
+}
+
+.navigation button {
+  font-family: var(--system-font-ui);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+
+.app p {
+  line-height: 1.65;
+}
+
+/* =========================================================
+   FULL-SCREEN PILLAR QUEST EXPERIENCE
+   ========================================================= */
+.pillar-quest-detail {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 240 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: clamp(22px, 4vw, 58px) clamp(16px, 5vw, 76px) 72px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 34%),
+    var(--app-bg) !important;
+  box-shadow: none !important;
+  animation: pillarQuestEnter .32s cubic-bezier(.2,.75,.25,1) both;
+  overscroll-behavior: contain;
+}
+
+.pillar-quest-detail > * {
+  width: min(100%, 1120px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes pillarQuestEnter {
+  from { opacity: 0; transform: translateY(18px) scale(.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pillar-quest-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin: 0 auto 30px !important;
+  padding: 0 15px;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-bg) 82%, transparent);
+  color: inherit;
+  font: 750 10px var(--system-font-ui);
+  letter-spacing: .12em;
+}
+
+.pillar-quest-back span {
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.pillar-quest-detail-header {
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+
+.pillar-quest-detail-header h2 {
+  margin: 12px 0;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -.055em;
+}
+
+.pillar-quest-detail-header blockquote {
+  max-width: 650px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.pillar-quest-contract,
+.pillar-quest-mission-map,
+.quest-objectives-panel {
+  margin-top: 18px;
+}
+
+.quest-objectives-panel {
+  width: min(100%, 1120px);
+}
+
+/* =========================================================
+   PILLARS FOUNDATION PAGE
+   ========================================================= */
+.pillars-page-header {
+  margin: 4px 0 28px;
+}
+
+.pillars-page-header > small,
+.pillar-foundation-index,
+.pillar-foundation-detail > div > small {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.pillars-page-header h1 {
+  margin: 10px 0;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -.055em;
+}
+
+.pillars-page-header p {
+  max-width: 650px;
+  color: var(--muted, inherit);
+  opacity: .72;
+  font-size: 15px;
+}
+
+.pillars-foundation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pillar-foundation-card {
+  position: relative;
+  min-height: 205px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  overflow: hidden;
+  text-align: left;
+  color: inherit;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 15px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--panel-bg) 93%, var(--accent) 4%), var(--panel-bg));
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.pillar-foundation-card:hover,
+.pillar-foundation-card.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--sys-line, var(--border)));
+  box-shadow: 0 14px 36px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.05);
+  transform: translateY(-2px);
+}
+
+.pillar-foundation-card > strong {
+  font: 700 22px var(--system-font-display);
+  letter-spacing: -.035em;
+}
+
+.pillar-foundation-count {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--accent);
+  font: 700 30px var(--system-font-display);
+}
+
+.pillar-foundation-count small {
+  font: 800 9px var(--system-font-ui);
+  letter-spacing: .14em;
+  opacity: .68;
+}
+
+.pillar-foundation-focus {
+  max-width: 250px;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: .68;
+}
+
+.pillar-foundation-stack {
+  position: absolute;
+  right: 16px;
+  bottom: 15px;
+  display: flex;
+  gap: 3px;
+  align-items: end;
+  height: 22px;
+  opacity: .7;
+}
+
+.pillar-foundation-stack i {
+  width: 7px;
+  height: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.pillar-foundation-stack i:nth-child(2n) { height: 13px; }
+.pillar-foundation-stack i:nth-child(3n) { height: 18px; }
+
+.pillar-foundation-detail {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px 28px;
+  margin-top: 18px;
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.pillar-foundation-detail h2 {
+  margin: 8px 0;
+  font: 700 clamp(26px, 3vw, 38px) var(--system-font-display);
+}
+
+.pillar-foundation-detail p {
+  max-width: 760px;
+  font-size: 14px;
+  opacity: .75;
+}
+
+.pillar-foundation-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.pillar-foundation-total strong {
+  font: 700 42px var(--system-font-display);
+}
+
+.pillar-foundation-total span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.pillar-foundation-rule {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--sys-line, var(--border));
+}
+
+.pillar-foundation-error {
+  grid-column: 1 / -1;
+  color: #d97757;
+}
+
+@media (max-width: 900px) {
+  .pillars-foundation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .pillars-foundation-grid { grid-template-columns: 1fr; }
+  .pillar-foundation-card { min-height: 160px; }
+  .pillar-foundation-detail { grid-template-columns: 1fr; }
+  .pillar-foundation-total { align-items: flex-start; }
+  .pillar-quest-detail { padding: 18px 14px 50px !important; }
+}
