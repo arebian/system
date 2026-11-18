@@ -1,4 +1,5 @@
 import React from "react";
+import { fetchPillarCement, fetchDailyPillarQuest } from "./systemCloud.js";
 import { todayKey, PATHS, scheduleDailyQuest, uid, hashString, SHIFT_PRESETS, formatClockLabel, normalizeProfile, normalizeSleepSchedule, addMinutesToClock } from "./systemProfileCore.js";
 import { xpRequired, getRank } from "./systemProgressionCore.js";
 import { useEffect, useRef, useMemo, useState, useLayoutEffect, useCallback } from "react";
@@ -2345,6 +2346,11 @@ export function Navigation({
       "QUESTS",
     ],
     [
+      "pillars",
+      "▥",
+      "PILLARS",
+    ],
+    [
       "training",
       "✦",
       "TRAINING",
@@ -4479,6 +4485,7 @@ export function QuestPage({
         "DISCIPLINE",
       pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
+      displayName: "DISCIPLINE QUEST",
       task: "Open the Discipline quest and complete its three Discipline missions. The main quest is approved automatically after all three pass review.",
     },
     {
@@ -4495,6 +4502,7 @@ export function QuestPage({
           profile.path +
           "must2"
       ),
+      displayName: "PHYSICAL QUEST",
       task: "Open the Physical quest and complete its three Physical missions. The main quest is approved automatically after all three pass review.",
     },
     {
@@ -4508,6 +4516,7 @@ export function QuestPage({
           profile.path +
           "must3"
       ),
+      displayName: "MENTAL QUEST",
       task: "Open the Mental quest and complete its three Mental missions. The main quest is approved automatically after all three pass review.",
     },
   ];
@@ -4518,6 +4527,51 @@ export function QuestPage({
   const openedPillarSyncStatus = openedPillarKey
     ? (mustSync[openedPillarKey] || (openedPillarState?.accepted && openedPillarState?.expiresAt ? "READY" : "SYNCING"))
     : "SYNCING";
+
+  useEffect(() => {
+    if (!openedPillarQuest || !openedPillarKey || openedPillarState?.backendQuestId) return undefined;
+
+    let active = true;
+    setMustSync(current => ({ ...current, [openedPillarKey]: "SYNCING" }));
+
+    fetchDailyPillarQuest(openedPillarQuest.pillar, date)
+      .then(serverQuest => {
+        if (!active) return;
+        if (!serverQuest?.id) {
+          setMustSync(current => ({ ...current, [openedPillarKey]: "ERROR" }));
+          return;
+        }
+
+        const currentState = latestProfileRef.current?.mustState || profile.mustState || {};
+        const existing = currentState[openedPillarKey] || {};
+        commitMustState({
+          ...currentState,
+          [openedPillarKey]: {
+            ...existing,
+            accepted: true,
+            mandatory: true,
+            completed: serverQuest.status === "COMPLETED",
+            failed: false,
+            penaltyApplied: false,
+            penalty: Number(serverQuest.xp_penalty ?? openedPillarQuest.penalty ?? 0),
+            name: openedPillarQuest.name,
+            date,
+            acceptedAt: serverQuest.accepted_at || existing.acceptedAt || null,
+            expiresAt: serverQuest.expires_at || existing.expiresAt || null,
+            backendQuestId: serverQuest.id,
+            authoritative: true,
+            syncStatus: "READY",
+          },
+        });
+        setMustSync(current => ({ ...current, [openedPillarKey]: "READY" }));
+      })
+      .catch(error => {
+        console.warn("DAILY PILLAR QUEST RECOVERY FAILED:", error);
+        if (active) setMustSync(current => ({ ...current, [openedPillarKey]: "ERROR" }));
+      });
+
+    return () => { active = false; };
+  }, [openedPillarQuestId, openedPillarKey, openedPillarState?.backendQuestId, date]);
 
   useEffect(() => {
     let active = true;
@@ -6239,7 +6293,7 @@ export function QuestPage({
           <div className="pillar-quest-detail-header">
             <div>
               <small>{openedPillarQuest.pillar} QUEST // DAILY MAIN QUEST</small>
-              <h2 id="pillar-quest-detail-title">{openedPillarQuest.name}</h2>
+              <h2 id="pillar-quest-detail-title">{openedPillarQuest.displayName || openedPillarQuest.name}</h2>
               <blockquote>"{openedPillarQuest.message}"</blockquote>
             </div>
             <div className="pillar-quest-detail-reward">
@@ -7471,7 +7525,7 @@ export function MustCard({
       </div>
 
       <h3>
-        {quest.name}
+        {quest.displayName || quest.name}
       </h3>
 
       <blockquote>
@@ -17817,6 +17871,97 @@ export function EvolutionModal({
   );
 }
 
+const SYSTEM_PILLARS = [
+  { id: "DISCIPLINE", name: "Discipline", focus: "Consistency, self-control and keeping commitments." },
+  { id: "PHYSICAL", name: "Physical", focus: "Strength, movement, fitness and recovery." },
+  { id: "MENTAL", name: "Mental", focus: "Focus, learning, reflection and resilience." },
+  { id: "SOCIAL", name: "Social", focus: "Relationships, communication and contribution." },
+  { id: "INTELLECT", name: "Intellect", focus: "Knowledge, curiosity and applied learning." },
+  { id: "SPIRITUAL", name: "Spiritual", focus: "Purpose, values and inner development." },
+  { id: "WEALTH", name: "Wealth", focus: "Financial discipline and long-term capability." },
+];
+
+export function PillarsPage() {
+  const [cement, setCement] = useState({});
+  const [status, setStatus] = useState("LOADING");
+  const [selected, setSelected] = useState("DISCIPLINE");
+
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled(SYSTEM_PILLARS.map(async pillar => [
+      pillar.id,
+      await fetchPillarCement(pillar.id),
+    ]))
+      .then(results => {
+        if (!active) return;
+        const next = {};
+        let failures = 0;
+        results.forEach(result => {
+          if (result.status === "fulfilled") next[result.value[0]] = result.value[1];
+          else failures += 1;
+        });
+        setCement(next);
+        setStatus(failures === SYSTEM_PILLARS.length ? "ERROR" : "READY");
+      });
+    return () => { active = false; };
+  }, []);
+
+  const activePillar = SYSTEM_PILLARS.find(item => item.id === selected) || SYSTEM_PILLARS[0];
+  const activeCement = Number(cement[activePillar.id] || 0);
+
+  return (
+    <section className="page pillars-page">
+      <header className="pillars-page-header">
+        <small>IDENTITY DEVELOPMENT // FOUNDATION RECORD</small>
+        <h1>YOUR FOUNDATION</h1>
+        <p>Seven areas of growth. Every cement unit is earned through an approved quest, not estimated from activity.</p>
+      </header>
+
+      <div className="pillars-foundation-grid">
+        {SYSTEM_PILLARS.map((pillar, index) => (
+          <button
+            type="button"
+            key={pillar.id}
+            className={"pillar-foundation-card" + (selected === pillar.id ? " is-selected" : "")}
+            onClick={() => setSelected(pillar.id)}
+            aria-pressed={selected === pillar.id}
+          >
+            <span className="pillar-foundation-index">FOUNDATION 0{index + 1}</span>
+            <strong>{pillar.name}</strong>
+            <span className="pillar-foundation-count">
+              {status === "LOADING" ? "—" : Number(cement[pillar.id] || 0)}
+              <small>CEMENT</small>
+            </span>
+            <span className="pillar-foundation-focus">{pillar.focus}</span>
+            <span className="pillar-foundation-stack" aria-hidden="true">
+              {Array.from({ length: Math.min(Number(cement[pillar.id] || 0), 8) }, (_, block) => (
+                <i key={block} />
+              ))}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <article className="pillar-foundation-detail card3d">
+        <div>
+          <small>SELECTED PILLAR // {activePillar.id}</small>
+          <h2>{activePillar.name}</h2>
+          <p>{activePillar.focus}</p>
+        </div>
+        <div className="pillar-foundation-total">
+          <strong>{status === "LOADING" ? "—" : activeCement}</strong>
+          <span>CEMENT EARNED</span>
+        </div>
+        <p className="pillar-foundation-rule">
+          Cement is recorded only when the System approves the parent quest after all three missions are completed and reviewed.
+          The daily main quests currently develop Discipline, Physical and Mental. The other pillars remain part of your identity system and can receive dedicated quest paths as those are introduced.
+        </p>
+        {status === "ERROR" && <small className="pillar-foundation-error">Some pillar records could not be loaded. Refresh this page to retry.</small>}
+      </article>
+    </section>
+  );
+}
+
 export function SystemGame() {
   const authoritativeProfileRef = useRef(null);
   const seenCelebrationsRef = useRef(new Set());
@@ -19248,6 +19393,8 @@ export function SystemGame() {
             }
           />
         )}
+
+        {tab === "pillars" && <PillarsPage />}
 
         <div
           className={
