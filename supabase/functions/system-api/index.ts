@@ -1,4 +1,5 @@
 import { LIVING_ACTIONS, handleLivingSystemAction } from "../_shared/livingSystem.ts";
+import { expectedDailyPillarForQuestCategory, questTasksMatchPillar } from "../_shared/questPillarCore.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-idempotency-key","Access-Control-Allow-Methods":"POST, OPTIONS"};
@@ -12,11 +13,11 @@ if(!questId||taskIds.length!==3||new Set(taskIds).size!==3)return json({error:"O
 const {data:parent,error:parentError}=await sb.from("user_quests").select("category").eq("id",questId).eq("user_id",userId).maybeSingle();
 if(parentError)throw parentError;
 if(!parent)return json({error:"QUEST_NOT_FOUND"},404);
-const parentCategory=String(parent.category||"").toUpperCase();
-const expectedPillar=parentCategory==="FOCUS"?"MENTAL":parentCategory;
+const expectedPillar=expectedDailyPillarForQuestCategory(parent.category);
+if(!expectedPillar)return json({error:"OBJECTIVE_PILLAR_MISMATCH"},422);
 const {data:taskRows,error:taskError}=await sb.from("quest_task_library").select("id,pillar").in("id",taskIds).eq("active",true);
 if(taskError)throw taskError;
-if(!Array.isArray(taskRows)||taskRows.length!==taskIds.length||taskRows.some(task=>String(task.pillar||"").toUpperCase()!==expectedPillar)){
+if(!questTasksMatchPillar(taskRows,taskIds,expectedPillar)){
 return json({error:"OBJECTIVE_PILLAR_MISMATCH",expected_pillar:expectedPillar},422);
 }
 }
