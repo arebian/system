@@ -29,6 +29,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119164749_lock_core_player_state_dml.sql` — revoked direct client writes to canonical profiles, attributes, quests, objectives, reviews, rewards and progression tables; profile deletion is now only through the reset RPC.
 - `20261119165100_constrain_private_storage_object_paths.sql` — restricts proof uploads to one folder below the user's UUID and class-special clips to exactly user/session/file depth.
 - `20261119165428_lock_intelligence_conversation_dml.sql` — prevents direct client writes to Intelligence threads/messages; user messages go through the role-restricted RPC and assistant messages are server-authored.
+- `20261119165802_fix_intelligence_message_role_contract.sql` — aligns the user-message RPC with the database's uppercase role constraint and rejects assistant-role submissions from clients.
 
 The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions. Canonical profiles, attributes, quests, objectives, reviews, rewards, inventory, skills, titles and pillar progress are also read-only to player clients.
 
@@ -80,7 +81,7 @@ An initial broad duplicate scan grouped several legacy rows with a null catalog 
 
 ## AI context boundary
 
-The System Intelligence endpoint previously accepted arbitrary browser awareness and guidance text, plus unfiltered text from server-stored profile, quest and boss rows. The shared context normalizers now keep only bounded numeric values, allowlisted enums, sanitized clock values and aggregate quest counts. Player names, profile notes, quest titles, boss names/metadata, event descriptions, routine metadata and arbitrary profile JSON are excluded from the model prompt. Conversation writes are also restricted: authenticated clients can add only user-role messages through the RPC; assistant-role messages are inserted by the server function. Unit tests cover prompt-injection strings and malformed values from both browser and database-derived context.
+The System Intelligence endpoint previously accepted arbitrary browser awareness and guidance text, plus unfiltered text from server-stored profile, quest and boss rows. The shared context normalizers now keep only bounded numeric values, allowlisted enums, sanitized clock values and aggregate quest counts. Player names, profile notes, quest titles, boss names/metadata, event descriptions, routine metadata and arbitrary profile JSON are excluded from the model prompt. Conversation writes are also restricted: authenticated clients can add only user-role messages through the RPC; assistant-role messages are inserted by the server function. The database stores uppercase USER/ASSISTANT roles; the responder and history API normalize them for the model/UI. No existing assistant transcript rows were present during the audit, so no historical cleanup was required. Unit tests cover prompt-injection strings and malformed values from both browser and database-derived context.
 
 ## Automated validation
 
