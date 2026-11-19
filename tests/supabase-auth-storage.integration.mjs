@@ -44,6 +44,29 @@ try {
   assert.ifError(ownProfile.error);
   assert.deepEqual(ownProfile.data.profile_data.identity, identity);
 
+  const forgedProfileUpdate = await first.client.from("profiles").update({
+    profile_data: { identity, xp: 999999 },
+  }).eq("id", first.id).select("id");
+  assert.ok(forgedProfileUpdate.error, "Players must not directly update canonical profile state");
+
+  const directProfileDelete = await first.client.from("profiles").delete().eq("id", first.id).select("id");
+  assert.ok(directProfileDelete.error, "Players must reset through the authenticated reset RPC, not delete profiles directly");
+
+  const forgedAttributeUpdate = await first.client.from("attributes").update({
+    strength: 9999,
+  }).eq("user_id", first.id).select("user_id");
+  assert.ok(forgedAttributeUpdate.error, "Players must not directly edit canonical attributes");
+
+  const forgedQuestUpdate = await first.client.from("user_quests").update({
+    status: "COMPLETED",
+  }).eq("user_id", first.id).select("id");
+  assert.ok(forgedQuestUpdate.error, "Players must not directly complete parent quests");
+
+  const forgedObjectiveUpdate = await first.client.from("user_quest_objectives").update({
+    status: "COMPLETED",
+  }).eq("user_id", first.id).select("id");
+  assert.ok(forgedObjectiveUpdate.error, "Players must not directly complete quest objectives");
+
   const edgeHeaders = {
     apikey: anonKey,
     Authorization: `Bearer ${first.accessToken}`,
