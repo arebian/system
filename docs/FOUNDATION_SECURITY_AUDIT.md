@@ -11,6 +11,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119120000_lock_player_event_writes.sql` — removed client insert/update policies from `progression_events` and `journey_events`; revoked direct client execution of the pillar-cement trigger function.
 - `20261119123000_index_objective_task_fk.sql` — added the missing index for `user_quest_objectives.task_id`.
 - `20261119130000_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
+- `20261119140000_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
 
 The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
 
@@ -26,6 +27,8 @@ The event tables remain readable and deletable by their owner. Canonical history
 - The pillar cement trigger function is not executable by client roles.
 
 Supabase's 81-function SECURITY DEFINER warning remains because these are intentional user-facing RPCs that need elevated table access while enforcing their own user boundary. It is not being suppressed by blanket permission changes.
+
+The character-reset action in `system-api` removes the player's private objects from both storage buckets using the service role, then calls the user-bound reset RPC. The frontend clears the matching local awareness, celebration and System Intelligence state only after the server confirms success. The reset integration test verifies the Auth session survives and a second player's data remains untouched.
 
 ## Storage
 
