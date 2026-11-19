@@ -111,6 +111,13 @@ try {
   assert.ifError(upload.error);
   uploaded.push(proofPath);
 
+  const nestedProofUpload = await first.client.storage.from("proofs").upload(
+    `${first.id}/nested/invalid-proof.png`,
+    bytes,
+    { contentType: "image/png", upsert: false },
+  );
+  assert.ok(nestedProofUpload.error, "Proof storage must reject nested object paths");
+
   const clipPath = `${first.id}/local-qa-session/qa-clip.webm`;
   const clipUpload = await admin.storage.from("class-special-clips").upload(
     clipPath,
