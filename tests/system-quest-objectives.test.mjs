@@ -62,3 +62,27 @@ test("recommendations can include timer objectives now that server verification 
   assert.ok(result.some(item => item.proof_type === "TIMER"));
   assert.equal(new Set(result.map(item => item.pillar)).size,3);
 });
+
+test("daily pillar recommendations exclude tasks above the player's level", () => {
+  const levelOneTasks = [
+    {id:"easy-1",title:"EASY ONE",pillar:"PHYSICAL",difficulty:"EASY",duration_minutes:5,min_level:1,proof_type:"NOTE"},
+    {id:"easy-2",title:"EASY TWO",pillar:"PHYSICAL",difficulty:"NORMAL",duration_minutes:10,min_level:1,proof_type:"NOTE"},
+    {id:"easy-3",title:"EASY THREE",pillar:"PHYSICAL",difficulty:"NORMAL",duration_minutes:15,min_level:1,proof_type:"NOTE"},
+    {id:"locked-1",title:"LOCKED ONE",pillar:"PHYSICAL",difficulty:"HARD",duration_minutes:5,min_level:2,proof_type:"NOTE"},
+    {id:"locked-2",title:"LOCKED TWO",pillar:"PHYSICAL",difficulty:"ELITE",duration_minutes:5,min_level:3,proof_type:"NOTE"},
+  ];
+  const result = recommendQuestObjectives(levelOneTasks,{primary:"DISCIPLINE"},{level:1,recentCompletionRate:95},3,"PHYSICAL");
+  assert.deepEqual(result.map(item=>item.id),["easy-1","easy-2","easy-3"]);
+  assert.ok(result.every(item=>item.min_level <= 1));
+});
+
+test("higher-level players can receive tasks unlocked for their level", () => {
+  const levelTwoTasks = [
+    {id:"base",title:"BASE",pillar:"MENTAL",difficulty:"EASY",duration_minutes:5,min_level:1,proof_type:"NOTE"},
+    {id:"advanced",title:"ADVANCED",pillar:"MENTAL",difficulty:"HARD",duration_minutes:10,min_level:2,proof_type:"NOTE"},
+    {id:"locked",title:"LOCKED",pillar:"MENTAL",difficulty:"ELITE",duration_minutes:10,min_level:3,proof_type:"NOTE"},
+  ];
+  const result = recommendQuestObjectives(levelTwoTasks,{primary:"DISCIPLINE"},{level:2,recentCompletionRate:95},3,"MENTAL");
+  assert.ok(result.some(item=>item.id === "advanced"));
+  assert.ok(result.every(item=>item.min_level <= 2));
+});
