@@ -2193,46 +2193,15 @@ export function MusicEngine({ enabled, volume, path, onStatus }) {
 }
 
 export async function deleteCloudProfile() {
-  const user =
-    await getCloudUser();
+  const user = await getCloudUser();
+  if (!user) return null;
 
-  if (!user) {
-    return;
-  }
-
-  const tables = [
-    "progression_events",
-    "attributes",
-    "profiles",
-  ];
-
-  for (
-    const table
-    of tables
-  ) {
-    const key =
-      table ===
-      "profiles"
-        ? "id"
-        : "user_id";
-
-    const {
-      error,
-    } =
-      await supabase
-        .from(
-          table
-        )
-        .delete()
-        .eq(
-          key,
-          user.id
-        );
-
-    if (error) {
-      throw error;
-    }
-  }
+  const { data, error } = await supabase.functions.invoke("system-api", {
+    body: { action: "delete_player_data" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data?.data ?? data;
 }
 
 export async function systemSignOut() {
