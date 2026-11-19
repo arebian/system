@@ -27,6 +27,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119163930_default_deny_future_public_objects.sql` — changed postgres-owned future public tables and sequences to default-deny for API roles; new migrations must explicitly grant the minimum required access.
 - `20261119164007_revoke_default_public_function_execute.sql` — removed PostgreSQL's global default PUBLIC EXECUTE grant for future postgres-owned functions.
 - `20261119164749_lock_core_player_state_dml.sql` — revoked direct client writes to canonical profiles, attributes, quests, objectives, reviews, rewards and progression tables; profile deletion is now only through the reset RPC.
+- `20261119165100_constrain_private_storage_object_paths.sql` — restricts proof uploads to one folder below the user's UUID and class-special clips to exactly user/session/file depth.
 
 The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions. Canonical profiles, attributes, quests, objectives, reviews, rewards, inventory, skills, titles and pillar progress are also read-only to player clients.
 
@@ -51,8 +52,8 @@ The character-reset action in `system-api` removes the player's private objects 
 
 Both `proofs` and `class-special-clips` buckets are private.
 
-- Proof objects are scoped to the authenticated user's UUID path. The live private `proofs` bucket currently accepts JPEG, PNG and WebP files up to 5 MiB. The UI also exposes video proof, but its upload types/35 MiB limit do not match the bucket configuration; this needs a Storage API bucket update before video proof can work reliably.
-- Class-special clips require the matching active Commander session and user path.
+- Proof objects are scoped to the authenticated user's UUID path, and the storage policy now rejects nested proof paths. The live private `proofs` bucket currently accepts JPEG, PNG and WebP files up to 5 MiB. The UI also exposes video proof, but its upload types/35 MiB limit do not match the bucket configuration; this needs a Storage API bucket update before video proof can work reliably.
+- Class-special clips require the matching active Commander session and user path, with exactly one session folder beneath the user's UUID.
 - The review Edge Function validates the attachment path against the authenticated user before generating a short-lived signed URL.
 
 ## Progression integrity scan
