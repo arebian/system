@@ -14,6 +14,8 @@ export async function reviewQuestOnBackend({proof}){
  window.qaLastEvidence=proof;
  return proof.detail.includes('25')?{id:'review-1',decision:'APPROVE',reason:'You exceeded the reading target.',question:''}:{decision:'INCOMPLETE',reason:'Ten minutes remain.',question:'How many minutes did you read in total?'};
 }
+export async function reviewQuestObjectiveOnBackend(args){ return reviewQuestOnBackend({ proof: { detail: args.evidence || '' } }); }
+
 export async function livingSystemAction(action,p={}){
  const state=window.qaWeeklyState;
  if(action==='weekly_boss_status')return structuredClone(state);
