@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { cleanAwarenessContext, cleanGuidanceSnapshot } from "../_shared/intelligenceContextCore.js";
+import { cleanAwarenessContext, cleanGuidanceSnapshot, cleanServerContext } from "../_shared/intelligenceContextCore.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -587,6 +587,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: context, error: contextError } = await supabase.rpc("system_intelligence_context");
   if (contextError) return json({ error: contextError.message }, 400);
+  const safeContext = cleanServerContext(context);
 
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -609,26 +610,19 @@ Deno.serve(async (req: Request) => {
     }))
     .filter((row: any) => row.content);
 
-  const player = context?.profile || context?.player || {};
+  const player = safeContext.profile;
   const { data: creditRows } = await supabase.from("attribute_credit_ledger")
     .select("credits_awarded,credits_spent").eq("user_id", userData.user.id).limit(1000);
   const unspentCredits = Array.isArray(creditRows) ? creditRows.reduce((sum:any,row:any) => sum + Math.max(0, Number(row.credits_awarded) - Number(row.credits_spent)), 0) : null;
   const contextBlock = JSON.stringify({
-    player: {
-      name: player?.name || null,
-      class: player?.path || player?.class || null,
-      level: player?.level || null,
-      xp: player?.xp ?? null,
-      streak: player?.streak ?? null,
-      momentum: player?.momentum ?? null,
-    },
-    attributes: context?.attributes || player?.attributes || null,
-    active_boss: context?.active_boss || context?.activeBoss || null,
-    active_quests: context?.active_quests || context?.activeQuests || null,
+    player,
+    attributes: safeContext.attributes,
+    active_boss: safeContext.active_boss,
+    active_quests: safeContext.active_quests,
     unspent_attribute_credits: unspentCredits,
-    routine: context?.routine || null,
-    foundation_plan: player?.profile_data?.foundationScan || null,
-    fuel_plan: player?.profile_data?.fuel || null,
+    routine: safeContext.routine,
+    foundation_plan: safeContext.foundation_plan,
+    fuel_plan: safeContext.fuel_plan,
     browser_guidance_snapshot: clientGuidance,
     awareness,
   }).slice(0, 18000);
@@ -665,7 +659,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!answer) {
-    answer = builtInAnswer(message, context, awareness, clientGuidance);
+    answer = builtInAnswer(message, safeContext, awareness, clientGuidance);
     if (!modelConnected && mode === "OPENAI_RESPONSE_PENDING") {
       mode = "BUILT_IN_GUIDANCE";
     }
