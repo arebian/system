@@ -6,6 +6,15 @@
 
 ## Applied database hardening
 
+The repository keeps a recovered baseline for isolated local resets; the live project retains its full historical migration ledger. The following recent live migration versions are aligned with their committed filenames:
+
+- `20261016154317_living_system_weekly_bosses_and_review.sql` — private review rate limits, review receipts and weekly preparation boss plans.
+- `20261116153400_add_multi_objective_quests.sql` — actionable objective library and parent/child quest structure.
+- `20261116153406_complete_multi_objective_quests.sql` — prevents parent quest completion before its required objectives are complete.
+- `20261116153410_require_ai_review_for_objective_xp.sql` — gates objective completion and XP on a valid, unconsumed AI review.
+- `20261116153415_add_objective_timer_verification.sql` — server-authoritative objective timer sessions and duration checks.
+- `20261116153458_lock_objective_guard_trigger_execution.sql` — removes direct client execution from the trigger-only parent quest guard.
+- `20261118134630_pillar_daily_quest_integrity.sql` — enforces the three-mission pillar quest shape and awards cement once on qualifying completion.
 The following migrations have been applied to the connected Supabase project and are committed on this branch:
 
 - `20261119154936_lock_player_event_writes.sql` — removed client insert/update policies from `progression_events` and `journey_events`; revoked direct client execution of the pillar-cement trigger function.
