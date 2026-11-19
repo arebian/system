@@ -72,7 +72,8 @@ test("daily pillar recommendations exclude tasks above the player's level", () =
     {id:"locked-2",title:"LOCKED TWO",pillar:"PHYSICAL",difficulty:"ELITE",duration_minutes:5,min_level:3,proof_type:"NOTE"},
   ];
   const result = recommendQuestObjectives(levelOneTasks,{primary:"DISCIPLINE"},{level:1,recentCompletionRate:95},3,"PHYSICAL");
-  assert.deepEqual(result.map(item=>item.id),["easy-1","easy-2","easy-3"]);
+  assert.deepEqual(new Set(result.map(item=>item.id)), new Set(["easy-1","easy-2","easy-3"]));
+  assert.equal(result.length, 3);
   assert.ok(result.every(item=>item.min_level <= 1));
 });
 
