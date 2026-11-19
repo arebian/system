@@ -19483,3 +19483,246 @@ select {
   .pillars-construction-page .pillar-foundation-card { min-height: 270px; padding: 12px 8px; }
   .pillar-architecture.is-large { height: 290px; }
 }
+
+
+/* SYSTEM CATALOGUE — grouped navigation */
+.navigation {
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0;
+  padding: 8px clamp(12px, 3vw, 34px) 9px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
+}
+.navigation-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: max-content;
+  padding: 0 13px;
+  border-right: 1px solid var(--sys-line, var(--border));
+}
+.navigation-group:first-child { padding-left: 0; }
+.navigation-group:last-child { border-right: 0; }
+.navigation-group-label {
+  padding: 0 9px 5px;
+  color: var(--muted, currentColor);
+  opacity: .48;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .2em;
+}
+.navigation-group-items {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.navigation .navigation-group-items button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 8px 8px 5px 5px;
+  white-space: nowrap;
+  font-size: 8px;
+  letter-spacing: .1em;
+  opacity: .58;
+  transition: background .2s ease, border-color .2s ease, opacity .2s ease;
+}
+.navigation .navigation-group-items button span {
+  margin-right: 6px;
+  font-size: 12px;
+}
+.navigation .navigation-group-items button:hover {
+  opacity: .9;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.navigation .navigation-group-items button.active {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--sys-line, var(--border)));
+  border-bottom-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+@media (max-width: 760px) {
+  .navigation { top: 64px; padding: 7px 10px; }
+  .navigation-group { padding: 0 8px; }
+  .navigation-group-label { padding-left: 7px; }
+  .navigation .navigation-group-items button { min-height: 38px; padding: 8px 7px; font-size: 7px; }
+}
+
+/* THE GREAT FOUNDATION — one unfinished roof supported by seven earned pillars */
+.pillars-construction-page .pillars-page-header {
+  margin-bottom: 22px;
+  padding: clamp(20px, 3vw, 34px);
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at 88% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 48%),
+    linear-gradient(135deg, color-mix(in srgb, var(--panel-bg) 95%, var(--accent) 5%), var(--panel-bg));
+}
+.pillars-construction-page .pillars-page-header > small {
+  font-size: 8px;
+  letter-spacing: .2em;
+}
+.pillars-construction-page .pillars-page-header h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(30px, 4.8vw, 54px);
+}
+.pillars-construction-page .pillars-page-header p {
+  max-width: 720px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.pillar-grand-structure {
+  position: relative;
+  margin: 0 0 25px;
+  padding: 24px clamp(10px, 3vw, 30px) 18px;
+  overflow: hidden;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 17px;
+  background:
+    radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 96%, #fff 4%), var(--panel-bg));
+}
+.pillar-grand-roof {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: min(520px, 82%);
+  min-height: 92px;
+  margin: 0 auto;
+  padding: 17px 12px 13px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 52%, var(--sys-line, var(--border)));
+  border-radius: 10px 10px 2px 2px;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, transparent) 0 8px, transparent 8px 16px);
+  text-align: center;
+}
+.pillar-grand-roof span,
+.pillar-grand-roof small {
+  color: var(--accent);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+.pillar-grand-roof strong {
+  font: 800 clamp(16px, 2.5vw, 25px) var(--system-font-display);
+  letter-spacing: .08em;
+}
+.pillar-grand-roof small { opacity: .65; }
+.pillar-grand-beam {
+  width: 94%;
+  height: 12px;
+  margin: 10px auto 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, #827b70);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d4cbb9, #8b8375);
+  box-shadow: 0 5px 0 rgba(0,0,0,.13);
+}
+.pillar-grand-columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(5px, 1.4vw, 16px);
+  align-items: end;
+  width: 90%;
+  min-height: 190px;
+  margin: 0 auto;
+}
+.pillar-grand-column {
+  display: flex;
+  min-width: 0;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 9px 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.pillar-grand-column:hover,
+.pillar-grand-column.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--sys-line, var(--border)));
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.pillar-grand-stone-stack {
+  display: flex;
+  width: min(100%, 48px);
+  min-height: 105px;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 3px;
+  padding: 4px;
+  border-left: 2px solid rgba(255,255,255,.18);
+  border-right: 2px solid rgba(0,0,0,.2);
+  background: linear-gradient(90deg, rgba(0,0,0,.16), rgba(255,255,255,.12), rgba(0,0,0,.12));
+}
+.pillar-grand-stone-stack i {
+  display: block;
+  height: 10px;
+  flex: 0 0 10px;
+  border: 1px solid #776f61;
+  background: linear-gradient(180deg, #d0c8b7, #a69d8c 58%, #8c8476);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+}
+.pillar-grand-stone-stack i:nth-child(3n + 2) { width: 88%; align-self: flex-end; }
+.pillar-grand-stone-stack em {
+  display: grid;
+  flex: 1;
+  place-content: center;
+  color: var(--accent);
+  font-size: 6px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.6;
+  text-align: center;
+}
+.pillar-grand-column > strong {
+  color: var(--accent);
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+.pillar-grand-column > span:not(.pillar-grand-stone-stack) {
+  font-size: clamp(7px, .9vw, 10px);
+  font-weight: 900;
+  text-align: center;
+}
+.pillar-grand-column > small {
+  font-size: 6px;
+  opacity: .55;
+  letter-spacing: .06em;
+}
+.pillar-grand-foundation {
+  width: 96%;
+  height: 13px;
+  margin: 0 auto;
+  border: 1px solid #766f64;
+  background: linear-gradient(180deg, #b9b09f, #777064);
+  box-shadow: 0 6px 0 rgba(0,0,0,.14);
+}
+.pillar-grand-caption {
+  margin-top: 16px;
+  color: var(--muted, currentColor);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .2em;
+  text-align: center;
+  opacity: .6;
+}
+@media (max-width: 640px) {
+  .pillar-grand-structure { padding: 18px 6px 14px; }
+  .pillar-grand-columns { width: 100%; min-height: 160px; gap: 2px; }
+  .pillar-grand-column { min-height: 155px; padding-inline: 1px; }
+  .pillar-grand-stone-stack { min-height: 88px; width: min(100%, 34px); padding: 3px; }
+  .pillar-grand-stone-stack i { height: 8px; flex-basis: 8px; }
+  .pillar-grand-roof { width: 92%; min-height: 82px; }
+  .pillar-grand-roof small { font-size: 6px; }
+}
