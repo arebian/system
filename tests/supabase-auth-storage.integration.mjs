@@ -13,6 +13,7 @@ const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const password = `Local-QA-${stamp}-Aa9!`;
 const users = [];
 const uploaded = [];
+const historyFixtures = [];
 const makeUser = async (suffix) => {
   const email = `system-qa-${suffix}-${stamp}@example.test`;
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
@@ -97,6 +98,69 @@ try {
   assert.ifError(signedUrl.error);
   assert.ok(signedUrl.data.signedUrl);
 
+  // Canonical history is backend-authored. A player may read only their own
+  // rows, but cannot create or rewrite progression/journey records directly.
+  for (const table of ["progression_events", "journey_events"]) {
+    const ownFixture = await admin.from(table).insert({
+      user_id: first.id,
+      event_type: "LOCAL_QA_FIXTURE",
+      title: "LOCAL QA HISTORY",
+      xp_delta: 0,
+      metadata: { test_fixture: true },
+    }).select("id").single();
+    assert.ifError(ownFixture.error);
+    const foreignFixture = await admin.from(table).insert({
+      user_id: second.id,
+      event_type: "LOCAL_QA_FIXTURE",
+      title: "FOREIGN LOCAL QA HISTORY",
+      xp_delta: 0,
+      metadata: { test_fixture: true },
+    }).select("id").single();
+    assert.ifError(foreignFixture.error);
+    historyFixtures.push({ table, ids: [ownFixture.data.id, foreignFixture.data.id] });
+
+    const ownRead = await first.client.from(table).select("id").eq("id", ownFixture.data.id);
+    assert.ifError(ownRead.error);
+    assert.equal(ownRead.data.length, 1, "Player can read their own canonical history");
+
+    const foreignRead = await first.client.from(table).select("id").eq("id", foreignFixture.data.id);
+    assert.ifError(foreignRead.error);
+    assert.deepEqual(foreignRead.data, [], "RLS must hide another user's canonical history");
+
+    const forgedInsert = await first.client.from(table).insert({
+      user_id: first.id,
+      event_type: "FORGED_QA_EVENT",
+      title: "FORGED HISTORY",
+      xp_delta: 9999,
+      metadata: {},
+    }).select("id");
+    assert.ok(forgedInsert.error, "Authenticated clients must not forge canonical history");
+
+    const forgedUpdate = await first.client.from(table).update({
+      title: "TAMPERED HISTORY",
+      xp_delta: 9999,
+    }).eq("id", ownFixture.data.id).select("id");
+    assert.ifError(forgedUpdate.error);
+    assert.deepEqual(forgedUpdate.data, [], "Authenticated clients must not rewrite canonical history");
+  }
+
+  const forgedXp = await first.client.rpc("system_award_xp", {
+    p_amount: 9999,
+    p_source: "LOCAL_QA_FORGED",
+    p_title: "FORGED XP",
+    p_metadata: {},
+  });
+  assert.ok(forgedXp.error, "Players must not call the internal XP award helper");
+
+  const forgedAttribute = await first.client.rpc("system_add_attribute", {
+    p_attribute: "STRENGTH",
+    p_delta: 99,
+    p_source: "LOCAL_QA_FORGED",
+    p_title: "FORGED ATTRIBUTE",
+    p_metadata: {},
+  });
+  assert.ok(forgedAttribute.error, "Players must not call the internal attribute award helper");
+
   console.log(JSON.stringify({
     status: "passed",
     checks: [
@@ -110,9 +174,15 @@ try {
       "private proof upload and owner download",
       "cross-user proof download denied",
       "service-side signed URL creation",
+      "owner-only reads for progression and journey history",
+      "direct progression and journey history writes rejected",
+      "direct XP and attribute award helpers rejected",
     ],
   }, null, 2));
 } finally {
   if (uploaded.length) await admin.storage.from("proofs").remove(uploaded);
+  for (const fixture of historyFixtures) {
+    await admin.from(fixture.table).delete().in("id", fixture.ids);
+  }
   for (const id of users) await admin.auth.admin.deleteUser(id);
 }
