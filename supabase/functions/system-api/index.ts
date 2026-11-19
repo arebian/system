@@ -16,8 +16,10 @@ async function listUserStoragePaths(admin:any,bucket:string,userId:string){
       if(error)throw error;
       const items=Array.isArray(data)?data:[];
       for(const item of items){
-        if(!item?.name)continue;
-        const path=`${folder}/${item.name}`;
+        const name=String(item?.name||"");
+        if(!name||name==="."||name===".."||name.includes("/")||name.includes("\\\\"))continue;
+        const path=`${folder}/${name}`;
+        if(!path.startsWith(`${userId}/`))continue;
         if(item.id)paths.push(path);
         else pending.push(path);
       }
