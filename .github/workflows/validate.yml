@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-and-build:
+  dependency-audit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,6 +30,19 @@ jobs:
         run: npm ci
       - name: Audit dependency vulnerabilities
         run: npm audit --audit-level=high
+
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
       - name: Run full test suite
         run: npm test
       - name: Install Chromium for browser tests
