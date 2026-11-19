@@ -599,13 +599,13 @@ Deno.serve(async (req: Request) => {
     .select("role,content,created_at")
     .eq("thread_id", threadId)
     .eq("user_id", userData.user.id)
-    .in("role", ["user", "assistant"])
+    .in("role", ["USER", "ASSISTANT"])
     .order("created_at", { ascending: true })
     .limit(18);
 
   const transcript = (Array.isArray(transcriptRows) ? transcriptRows : [])
     .map((row: any) => ({
-      role: row.role === "assistant" ? "assistant" : "user",
+      role: String(row.role || "").toLowerCase() === "assistant" ? "assistant" : "user",
       content: cleanText(row.content, 5000),
     }))
     .filter((row: any) => row.content);
@@ -670,7 +670,7 @@ Deno.serve(async (req: Request) => {
     .insert({
       thread_id: threadId,
       user_id: userData.user.id,
-      role: "assistant",
+      role: "ASSISTANT",
       content: answer,
       metadata: {
         mode,
