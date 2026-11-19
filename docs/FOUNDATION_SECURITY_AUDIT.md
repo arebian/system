@@ -50,6 +50,7 @@ Read-only checks against the live database found:
 - No duplicate pillar cement award events.
 - Every stored cement balance matches its cement-award event count.
 - No duplicate penalty records.
+- XP accounting is split by design: positive awards are recorded in `progression_events`, while expiry deductions are recorded in `quest_penalty_events` and `journey_events`; penalties clamp current XP at zero and are unique per quest.
 - No duplicate canonical quest/player/day records.
 - No duplicate legacy quest title/player/day records.
 
