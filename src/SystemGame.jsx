@@ -2319,110 +2319,59 @@ export function Navigation({
   setTab,
   profile,
 }) {
-  const tabs = [
-    [
-      "dashboard",
-      "◈",
-      "DASHBOARD",
-    ],
-    [
-      "attributes",
-      "◇",
-      "ATTRIBUTES",
-    ],
-    [
-      "quests",
-      "⚔",
-      "QUESTS",
-    ],
-    [
-      "pillars",
-      "▥",
-      "PILLARS",
-    ],
-    [
-      "training",
-      "✦",
-      "TRAINING",
-    ],
-    [
-      "class-training",
-      "✧",
-      "CLASS SPECIAL",
-    ],
-    [
-      "fuel",
-      "◒",
-      "FUEL SYSTEM",
-    ],
-    ...(
-      profile?.path ===
-      "MAGE"
-        ? [
-            [
-              "archive",
-              "▤",
-              "GRAND ARCHIVE",
-            ],
-          ]
-        : []
-    ),
-    [
-      "progress",
-      "▣",
-      "PROGRESS",
-    ],
-    [
-      "inventory",
-      "◆",
-      "INVENTORY",
-    ],
-    [
-      "journey",
-      "◎",
-      "JOURNEY",
-    ],
-    [
-      "trophies",
-      "♜",
-      "TROPHY ROOM",
-    ],
-    [
-      "system",
-      "⌁",
-      "SYSTEM",
-    ],
+  const groups = [
+    {
+      label: "COMMAND",
+      items: [
+        ["dashboard", "◈", "DASHBOARD"],
+        ["attributes", "◇", "ATTRIBUTES"],
+        ["quests", "⚔", "QUESTS"],
+        ["pillars", "▥", "PILLARS"],
+      ],
+    },
+    {
+      label: "DEVELOPMENT",
+      items: [
+        ["training", "✦", "TRAINING"],
+        ["class-training", "✧", "CLASS SPECIAL"],
+        ["fuel", "◒", "FUEL SYSTEM"],
+      ],
+    },
+    {
+      label: "RECORDS",
+      items: [
+        ...(profile?.path === "MAGE" ? [["archive", "▤", "GRAND ARCHIVE"]] : []),
+        ["progress", "▣", "PROGRESS"],
+        ["inventory", "◆", "INVENTORY"],
+        ["journey", "◎", "JOURNEY"],
+        ["trophies", "♜", "TROPHY ROOM"],
+        ["system", "⌁", "SYSTEM"],
+      ],
+    },
   ];
 
   return (
-    <nav className="navigation">
-      {tabs.map(
-        ([
-          id,
-          icon,
-          title,
-        ]) => (
-          <button
-            data-sfx="tab"
-            type="button"
-            key={id}
-            className={
-              tab === id
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setTab(id)
-            }
-          >
-            <span>
-              {icon}
-            </span>
-
-            {title}
-          </button>
-        )
-      )}
+    <nav className="navigation" aria-label="System catalogue">
+      {groups.map((group) => (
+        <div className="navigation-group" key={group.label}>
+          <small className="navigation-group-label">{group.label}</small>
+          <div className="navigation-group-items">
+            {group.items.map(([id, icon, title]) => (
+              <button
+                data-sfx="tab"
+                type="button"
+                key={id}
+                className={tab === id ? "active" : ""}
+                aria-current={tab === id ? "page" : undefined}
+                onClick={() => setTab(id)}
+              >
+                <span>{icon}</span>
+                {title}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -17919,10 +17868,44 @@ export function PillarsPage() {
   return (
     <section className="page pillars-page pillars-construction-page">
       <header className="pillars-page-header">
-        <small>IDENTITY DEVELOPMENT // THE GREAT FOUNDATION</small>
-        <h1>BUILD YOUR LEGACY</h1>
-        <p>Every approved quest lays another stone. Build each pillar with earned cement. Build all seven pillars. The title at the summit is MASTER OF THE SELF.</p>
+        <small>IDENTITY DEVELOPMENT / THE GREAT FOUNDATION</small>
+        <h1>SEVEN PILLARS. ONE LEGACY.</h1>
+        <p>Every approved quest lays another stone. Each pillar rises through action. When all seven foundations are complete, the final roof is yours to claim.</p>
       </header>
+
+      <section className="pillar-grand-structure" aria-label="The seven pillars supporting the unfinished roof">
+        <div className="pillar-grand-roof">
+          <span>THE FINAL ACHIEVEMENT</span>
+          <strong>MASTER OF THE SELF</strong>
+          <small>ROOF UNFINISHED // EARN THE RIGHT TO RAISE IT</small>
+        </div>
+        <div className="pillar-grand-beam" />
+        <div className="pillar-grand-columns">
+          {SYSTEM_PILLARS.map((pillar, index) => {
+            const count = Number(cement[pillar.id] || 0);
+            const courses = Math.min(count, 8);
+            return (
+              <button
+                type="button"
+                key={pillar.id}
+                className={"pillar-grand-column" + (selected === pillar.id ? " is-selected" : "")}
+                onClick={() => setSelected(pillar.id)}
+                aria-pressed={selected === pillar.id}
+              >
+                <span className="pillar-grand-stone-stack">
+                  {Array.from({ length: courses }, (_, stone) => <i key={stone} />)}
+                  {courses === 0 && <em>AWAITING<br />FIRST STONE</em>}
+                </span>
+                <strong>0{index + 1}</strong>
+                <span>{pillar.name}</span>
+                <small>{status === "LOADING" ? "—" : count} STONES</small>
+              </button>
+            );
+          })}
+        </div>
+        <div className="pillar-grand-foundation" />
+        <div className="pillar-grand-caption">ONE STRUCTURE • SEVEN FOUNDATIONS • ONE IDENTITY</div>
+      </section>
 
       <div className="pillars-foundation-grid">
         {SYSTEM_PILLARS.map((pillar, index) => {
