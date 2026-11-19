@@ -22,8 +22,9 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119155432_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
 - `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
 - `20261119162732_proof_video_upload_support.sql` — no-op history marker. A direct SQL bucket update was reverted; future proof-bucket configuration must use the Supabase Storage API.
+- `20261119163527_lock_public_table_ddl_and_event_ledgers.sql` — removed `TRUNCATE`, `TRIGGER` and `REFERENCES` from current public tables and future postgres-owned public tables; made progression, journey and boss-damage ledgers read-only to client roles.
 
-The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
+The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions.
 
 ## Authorization findings
 
@@ -36,7 +37,7 @@ The event tables remain readable and deletable by their owner. Canonical history
 - Internal progression helpers `system_award_xp()` and `system_add_attribute()` are not executable by client roles.
 - The pillar cement trigger function is not executable by client roles.
 
-Supabase's 81-function SECURITY DEFINER warning remains because these are intentional user-facing RPCs that need elevated table access while enforcing their own user boundary. It is not being suppressed by blanket permission changes.
+Supabase's 82-function SECURITY DEFINER warning remains because these are intentional user-facing RPCs that need elevated table access while enforcing their own user boundary. It is not being suppressed by blanket permission changes.
 
 The character-reset action in `system-api` removes the player's private objects from both storage buckets using the service role, then calls the user-bound reset RPC. The frontend clears the matching local awareness, celebration and System Intelligence state only after the server confirms success. The reset integration test verifies the Auth session survives and a second player's data remains untouched.
 
@@ -85,7 +86,7 @@ A GitHub Actions workflow runs:
 6. Production build
 7. Isolated local Supabase migration reset and authenticated integration tests, including cross-user profile isolation, private proof storage, and direct history-write rejection.
 
-The run at commit `85d4255` passed all three jobs, including the expanded two-user history and storage integration tests. The newer AI-context hardening run is being revalidated after a parser test caught and fixed a regex escaping error.
+The previously completed run at commit `85d4255` passed all three jobs, including the two-user history and storage integration tests. A newer run is being revalidated after the AI-context hardening and migration-history alignment changes.
 
 ## Remaining follow-up
 
