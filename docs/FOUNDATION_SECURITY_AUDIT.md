@@ -12,6 +12,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119155125_index_objective_task_fk.sql` — added the missing index for `user_quest_objectives.task_id`.
 - `20261119155432_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
 - `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
+- `20261119162732_proof_video_upload_support.sql` — aligned the private proof bucket with the app's 35 MiB upload limit and supported image/video MIME types.
 
 The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
 
@@ -34,7 +35,7 @@ The character-reset action in `system-api` removes the player's private objects 
 
 Both `proofs` and `class-special-clips` buckets are private.
 
-- Proof objects are scoped to the authenticated user's UUID path.
+- Proof objects are scoped to the authenticated user's UUID path. The private `proofs` bucket accepts JPEG, PNG, WebP, MP4, WebM and QuickTime files up to 35 MiB; the frontend picker and uploader enforce the same MIME allowlist.
 - Class-special clips require the matching active Commander session and user path.
 - The review Edge Function validates the attachment path against the authenticated user before generating a short-lived signed URL.
 
