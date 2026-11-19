@@ -4237,12 +4237,6 @@ export function QuestPage({
   ] = useState({});
 
   const [openedPillarQuestId, setOpenedPillarQuestId] = useState(null);
-  const openedPillarDetailRef = useRef(null);
-
-  useEffect(() => {
-    if (!openedPillarQuestId) return;
-    openedPillarDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [openedPillarQuestId]);
 
   // Must Quest acceptance can finish while another Quest action is in
   // progress. Keep the newest profile snapshot so an asynchronous acceptance
@@ -6274,9 +6268,8 @@ export function QuestPage({
         </div>
       </article>
 
-      {openedPillarQuest ? (
+      {openedPillarQuest ? createPortal((
         <section
-          ref={openedPillarDetailRef}
           className="pillar-quest-detail"
           key={date + "-" + openedPillarQuest.id}
           aria-labelledby="pillar-quest-detail-title"
@@ -6379,7 +6372,7 @@ export function QuestPage({
             </div>
           )}
         </section>
-      ) : (
+      ), document.body) : (
         <>
           <SectionLabel
             number="01"
