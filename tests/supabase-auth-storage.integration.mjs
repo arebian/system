@@ -13,6 +13,7 @@ const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const password = `Local-QA-${stamp}-Aa9!`;
 const users = [];
 const uploaded = [];
+const uploadedClips = [];
 const historyFixtures = [];
 const makeUser = async (suffix) => {
   const email = `system-qa-${suffix}-${stamp}@example.test`;
@@ -86,6 +87,15 @@ try {
   });
   assert.ifError(upload.error);
   uploaded.push(proofPath);
+
+  const clipPath = `${first.id}/local-qa-session/qa-clip.webm`;
+  const clipUpload = await admin.storage.from("class-special-clips").upload(
+    clipPath,
+    new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]),
+    { contentType: "video/webm", upsert: false },
+  );
+  assert.ifError(clipUpload.error);
+  uploadedClips.push(clipPath);
 
   const ownDownload = await first.client.storage.from("proofs").download(proofPath);
   assert.ifError(ownDownload.error);
@@ -189,6 +199,10 @@ try {
   assert.ifError(remainingProofs.error);
   assert.deepEqual(remainingProofs.data, [], "Character reset must remove private proof files");
 
+  const remainingClips = await admin.storage.from("class-special-clips").list(first.id, { limit: 100 });
+  assert.ifError(remainingClips.error);
+  assert.deepEqual(remainingClips.data, [], "Character reset must recursively remove private class clips");
+
   console.log(JSON.stringify({
     status: "passed",
     checks: [
@@ -205,12 +219,13 @@ try {
       "owner-only reads for progression and journey history",
       "direct progression and journey history writes rejected",
       "direct XP and attribute award helpers rejected",
-      "complete character reset removes user data and private proof files",
+      "complete character reset removes user data and private proof and nested class-clip files",
       "character reset preserves Auth account and other players data",
     ],
   }, null, 2));
 } finally {
   if (uploaded.length) await admin.storage.from("proofs").remove(uploaded);
+  if (uploadedClips.length) await admin.storage.from("class-special-clips").remove(uploadedClips);
   for (const fixture of historyFixtures) {
     await admin.from(fixture.table).delete().in("id", fixture.ids);
   }
