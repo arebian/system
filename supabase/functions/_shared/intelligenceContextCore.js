@@ -76,7 +76,7 @@ const QUEST_TYPES = new Set(["DAILY", "CLASS", "MUST", "STANDARD", "ADAPTIVE", "
 
 function cleanClock(value) {
   const candidate = String(value ?? "").trim().slice(0, 5);
-  return /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(candidate) ? candidate : "";
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(candidate) ? candidate : "";
 }
 
 function cleanFoundationPlan(raw) {
