@@ -67,12 +67,13 @@ export function cleanGuidanceSnapshot(raw) {
 
 const QUEST_CATEGORIES = new Set([
   "DISCIPLINE", "PHYSICAL", "MENTAL", "SOCIAL", "INTELLECT",
-  "SPIRITUAL", "WEALTH", "SYSTEM", "CLASS",
+  "SPIRITUAL", "WEALTH", "SYSTEM", "CLASS", "FOCUS", "HEALTH",
+  "HOME", "HYGIENE", "LEARNING", "NUTRITION", "RECOVERY",
 ]);
 const QUEST_STATUSES = new Set([
-  "ASSIGNED", "ACCEPTED", "COMPLETED", "FAILED", "EXPIRED", "CANCELLED",
+  "ASSIGNED", "ACCEPTED", "COMPLETED", "FAILED", "EXPIRED", "CANCELLED", "DECLINED",
 ]);
-const QUEST_TYPES = new Set(["DAILY", "CLASS", "MUST", "STANDARD", "ADAPTIVE", "BOSS"]);
+const QUEST_TYPES = new Set(["DAILY", "CLASS", "MUST", "STANDARD", "RARE", "ADAPTIVE", "BOSS"]);
 
 function cleanClock(value) {
   const candidate = String(value ?? "").trim().slice(0, 5);
@@ -86,8 +87,9 @@ function cleanFoundationPlan(raw) {
         enumValue(value, new Set(["STRENGTH", "BODY_COMPOSITION", "FITNESS", "FOCUS", "CONFIDENCE", "KNOWLEDGE"]))
       ).filter(Boolean))].slice(0, 6)
     : [];
+  const primaryFocus = enumValue(source.primaryFocus, new Set(["STRENGTH", "BODY_COMPOSITION", "FITNESS", "FOCUS", "CONFIDENCE", "KNOWLEDGE"])) || goals[0] || "";
   return {
-    primaryFocus: enumValue(source.primaryFocus, new Set(["STRENGTH", "BODY_COMPOSITION", "FITNESS", "FOCUS", "CONFIDENCE", "KNOWLEDGE"])),
+    primaryFocus,
     focusGoals: goals,
     experience: enumValue(source.experience, new Set(["NEW", "RETURNING", "REGULAR", "EXPERIENCED"])),
     activityLevel: enumValue(source.activityLevel, new Set(["LOW", "MODERATE", "ACTIVE", "VERY_ACTIVE"])),
@@ -144,7 +146,7 @@ export function cleanServerContext(raw) {
   const boss = Object.keys(rawBoss).length
     ? {
         rank: enumValue(rawBoss.rank, RANKS),
-        status: enumValue(rawBoss.status, new Set(["ACTIVE", "COMPLETED", "FAILED", "RESOLVED"])),
+        status: enumValue(rawBoss.status, new Set(["ACTIVE", "COMPLETE", "COMPLETED", "FAILED", "ABANDONED", "RESOLVED"])),
         hp: clampInt(rawBoss.hp, 0, 100000000, 0),
         maxHp: clampInt(rawBoss.max_hp ?? rawBoss.maxHp, 0, 100000000, 0),
       }
