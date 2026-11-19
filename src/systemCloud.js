@@ -125,7 +125,23 @@ async function invokeSystemApi(action, payload = {}, options = {}) {
   );
 
   if (error) {
-    throw error;
+    // Supabase wraps non-2xx Edge Function responses in FunctionsHttpError.
+    // Read the response body so the UI can show the backend's actionable
+    // error code instead of the generic "non-2xx status code" message.
+    let edgeFailure = null;
+    try {
+      const response = error.context?.clone
+        ? error.context.clone()
+        : error.context;
+      if (response?.json) edgeFailure = await response.json();
+    } catch {
+      // Keep the original transport error when no JSON body is available.
+    }
+    const code = edgeFailure?.error || edgeFailure?.code || null;
+    const failure = new Error(code || error.message || "SYSTEM_API_REQUEST_FAILED");
+    failure.code = code || error.name || "SYSTEM_API_ERROR";
+    failure.cause = error;
+    throw failure;
   }
 
   if (data?.error) {
