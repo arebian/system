@@ -7164,7 +7164,7 @@ export function QuestProofModal({
             <SystemField label="PROOF IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) =>
                   setFile(
                     e.target
@@ -7197,7 +7197,7 @@ export function QuestProofModal({
             <SystemField label="PRIVATE VIDEO PROOF • 30–60 SECONDS RECOMMENDED • 35 MB MAX">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/mp4,video/webm,video/quicktime"
                 capture="user"
                 onChange={(e) =>
                   setFile(
@@ -12957,7 +12957,7 @@ export function Training({
             <SystemField label="PHYSICAL PROOF — IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(event) =>
                   setMasteryProofFile(
                     event.target.files?.[0] ||
@@ -15444,7 +15444,7 @@ export function Journey({
         <SystemField label="PHOTO PROOF">
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={addPhoto}
           />
         </SystemField>
