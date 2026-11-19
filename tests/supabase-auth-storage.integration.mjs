@@ -150,9 +150,35 @@ try {
       title: "TAMPERED HISTORY",
       xp_delta: 9999,
     }).eq("id", ownFixture.data.id).select("id");
-    assert.ifError(forgedUpdate.error);
-    assert.deepEqual(forgedUpdate.data, [], "Authenticated clients must not rewrite canonical history");
+    assert.ok(forgedUpdate.error, "Authenticated clients must not rewrite canonical history");
+
+    const forgedDelete = await first.client.from(table).delete().eq("id", ownFixture.data.id).select("id");
+    assert.ok(forgedDelete.error, "Authenticated clients must not erase canonical history");
   }
+
+  const bossFixture = await admin.from("boss_quests").insert({
+    user_id: first.id,
+    title: "LOCAL QA BOSS",
+    rank: "C",
+    category: "DISCIPLINE",
+    status: "ACTIVE",
+    xp_reward: 0,
+    max_hp: 100,
+    hp: 100,
+    system_assigned: true,
+  }).select("id").single();
+  assert.ifError(bossFixture.error);
+
+  const forgedBossDamage = await first.client.from("boss_damage_events").insert({
+    user_id: first.id,
+    boss_quest_id: bossFixture.data.id,
+    source_type: "FORGED_QA_DAMAGE",
+    damage: 999,
+    hp_before: 100,
+    hp_after: 0,
+    metadata: {},
+  }).select("id");
+  assert.ok(forgedBossDamage.error, "Authenticated clients must not forge boss damage history");
 
   const forgedXp = await first.client.rpc("system_award_xp", {
     p_amount: 9999,
@@ -217,7 +243,8 @@ try {
       "cross-user proof download denied",
       "service-side signed URL creation",
       "owner-only reads for progression and journey history",
-      "direct progression and journey history writes rejected",
+      "direct progression and journey history writes, updates and deletes rejected",
+      "direct boss damage history writes rejected",
       "direct XP and attribute award helpers rejected",
       "complete character reset removes user data and private proof and nested class-clip files",
       "character reset preserves Auth account and other players data",
