@@ -161,6 +161,34 @@ try {
   });
   assert.ok(forgedAttribute.error, "Players must not call the internal attribute award helper");
 
+  const reset = await first.client.functions.invoke("system-api", {
+    body: { action: "delete_player_data" },
+  });
+  assert.ifError(reset.error);
+  assert.equal(reset.data.data.profile_deleted, true);
+  assert.equal(reset.data.data.auth_account_preserved, true);
+
+  const survivingAuth = await first.client.auth.getUser();
+  assert.ifError(survivingAuth.error);
+  assert.equal(survivingAuth.data.user.id, first.id, "Character reset must preserve the Auth account");
+
+  const removedProfile = await admin.from("profiles").select("id").eq("id", first.id);
+  assert.ifError(removedProfile.error);
+  assert.deepEqual(removedProfile.data, [], "Character reset must remove the old profile");
+
+  for (const fixture of historyFixtures) {
+    const ownRows = await admin.from(fixture.table).select("id").eq("id", fixture.ids[0]);
+    assert.ifError(ownRows.error);
+    assert.deepEqual(ownRows.data, [], "Character reset must remove the player's history");
+    const otherRows = await admin.from(fixture.table).select("id").eq("id", fixture.ids[1]);
+    assert.ifError(otherRows.error);
+    assert.equal(otherRows.data.length, 1, "Character reset must not delete another player's history");
+  }
+
+  const remainingProofs = await admin.storage.from("proofs").list(first.id, { limit: 100 });
+  assert.ifError(remainingProofs.error);
+  assert.deepEqual(remainingProofs.data, [], "Character reset must remove private proof files");
+
   console.log(JSON.stringify({
     status: "passed",
     checks: [
@@ -177,6 +205,8 @@ try {
       "owner-only reads for progression and journey history",
       "direct progression and journey history writes rejected",
       "direct XP and attribute award helpers rejected",
+      "complete character reset removes user data and private proof files",
+      "character reset preserves Auth account and other players data",
     ],
   }, null, 2));
 } finally {
