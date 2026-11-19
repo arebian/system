@@ -44,9 +44,25 @@ export async function livingSystemAction(action,p={}){
       await context.route('**/src/systemLivingApi.js*', route => route.fulfill({ contentType: 'text/javascript', body: api }));
       await context.route('**/src/supabaseClient.js*', route => route.fulfill({ contentType: 'text/javascript', body: 'export const supabase={auth:{getSession:async()=>({data:{session:null}})},rpc:async()=>({data:null,error:null})};' }));
       const page = await context.newPage();
-      const errors = []; page.on('pageerror', error => errors.push(error.message));
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      page.on('console', message => { if (message.type() === 'error') errors.push('console: ' + message.text()); });
       await page.goto('http://127.0.0.1:5186/tests/browser/living-harness.html?mode=celebration');
-      const dialog = page.getByRole('dialog'); await dialog.waitFor();
+      const dialog = page.getByRole('dialog');
+      try {
+        await dialog.waitFor({ timeout: 8000 });
+      } catch {
+        const diagnostics = await page.evaluate(() => ({
+          title: document.title,
+          body: document.body.innerText,
+          mode: new URLSearchParams(location.search).get('mode'),
+          modalRoot: Boolean(document.getElementById('system-modal-root')),
+          overlayCount: document.querySelectorAll('.achievement-overlay').length,
+          rootHtml: document.getElementById('root')?.innerHTML.slice(0, 1200),
+        }));
+        throw new Error('Achievement dialog did not render. ' + JSON.stringify({ diagnostics, errors }));
+      }
+      assert.deepEqual(errors, []);
       assert.equal(await dialog.getByText('D-RANK', { exact: true }).count(), 1);
       assert.equal(await page.evaluate(() => window.qaSounds), 1, 'Strict Mode must not replay sound');
       await page.screenshot({ path: path.join(output, `rank-celebration-${width}.png`) });
