@@ -2201,6 +2201,27 @@ export async function deleteCloudProfile() {
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
+
+  let localProfile = null;
+  try {
+    localProfile = JSON.parse(localStorage.getItem("systemProfile") || "null");
+  } catch {
+    localProfile = null;
+  }
+  const fingerprint = String(localProfile?.fingerprint || "").trim();
+  const awarenessKey = fingerprint || `${localProfile?.name || "PLAYER"}-${localProfile?.path || "COMMANDER"}`;
+  localStorage.removeItem(`systemAwarenessV1:${awarenessKey}`);
+  if (fingerprint) localStorage.removeItem(`systemCelebrations:${fingerprint}`);
+  for (const key of [
+    "systemProfile",
+    "systemIntelligenceThread",
+    "systemIntelligenceLocalChatId",
+    "systemIntelligenceLocalTranscript",
+    "systemIntelligenceHistoryV2",
+    "systemAdaptiveTrainingFocus",
+  ]) {
+    localStorage.removeItem(key);
+  }
   return data?.data ?? data;
 }
 
