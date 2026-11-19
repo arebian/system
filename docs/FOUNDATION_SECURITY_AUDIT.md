@@ -61,7 +61,7 @@ An initial broad duplicate scan grouped several legacy rows with a null catalog 
 
 ## AI context boundary
 
-The System Intelligence endpoint previously accepted arbitrary browser awareness and guidance text into its model prompt. The new shared context normalizer keeps only bounded numeric values and allowlisted enums (class, rank, attributes, and fuel goal). Free-text browser briefing, recovery, boss and directive labels are excluded. Unit tests cover prompt-injection strings and malformed values.
+The System Intelligence endpoint previously accepted arbitrary browser awareness and guidance text, plus unfiltered text from server-stored profile, quest and boss rows. The shared context normalizers now keep only bounded numeric values, allowlisted enums, sanitized clock values and aggregate quest counts. Player names, profile notes, quest titles, boss names/metadata, event descriptions, routine metadata and arbitrary profile JSON are excluded from the model prompt. Unit tests cover prompt-injection strings and malformed values from both browser and database-derived context.
 
 ## Automated validation
 
