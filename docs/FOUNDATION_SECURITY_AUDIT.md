@@ -12,7 +12,6 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119155125_index_objective_task_fk.sql` — added the missing index for `user_quest_objectives.task_id`.
 - `20261119155432_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
 - `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
-- `20261119162732_proof_video_upload_support.sql` — aligned the private proof bucket with the app's 35 MiB upload limit and supported image/video MIME types.
 
 The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
 
@@ -35,7 +34,7 @@ The character-reset action in `system-api` removes the player's private objects 
 
 Both `proofs` and `class-special-clips` buckets are private.
 
-- Proof objects are scoped to the authenticated user's UUID path. The private `proofs` bucket accepts JPEG, PNG, WebP, MP4, WebM and QuickTime files up to 35 MiB; the frontend picker and uploader enforce the same MIME allowlist.
+- Proof objects are scoped to the authenticated user's UUID path. The live private `proofs` bucket currently accepts JPEG, PNG and WebP files up to 5 MiB. The UI also exposes video proof, but its upload types/35 MiB limit do not match the bucket configuration; this needs a Storage API bucket update before video proof can work reliably.
 - Class-special clips require the matching active Commander session and user path.
 - The review Edge Function validates the attachment path against the authenticated user before generating a short-lived signed URL.
 
@@ -82,6 +81,7 @@ The run at commit `85d4255` passed all three jobs, including the expanded two-us
 
 - Investigate two recent `503 REVIEW_UNAVAILABLE` responses from the quest-review path. Existing request logs do not contain the upstream provider response, so the cause is not yet established.
 - Enable Supabase Auth leaked-password protection in the hosted project. The live security advisor currently reports it disabled.
+- Align the private `proofs` bucket with the app's video-proof workflow using the Supabase Storage API (not direct SQL changes to the `storage` schema).
 - Review production Supabase Auth settings separately from the repository's local-development `config.toml`; local settings do not prove the hosted project's password, confirmation, or MFA configuration.
 - Keep the Supabase advisor's no-policy notices for `client_error_events` and `system_private.review_rate_limits` under review. Both currently have no client access by design.
 - Do not drop the advisor's unused indexes solely from low usage counts; verify query workload before any removal.
