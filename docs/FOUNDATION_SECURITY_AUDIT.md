@@ -11,7 +11,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119154936_lock_player_event_writes.sql` — removed client insert/update policies from `progression_events` and `journey_events`; revoked direct client execution of the pillar-cement trigger function.
 - `20261119155125_index_objective_task_fk.sql` — added the missing index for `user_quest_objectives.task_id`.
 - `20261119155432_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
-- `20261119162000_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
+- `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
 
 The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
 
@@ -80,6 +80,7 @@ The run at commit `85d4255` passed all three jobs, including the expanded two-us
 ## Remaining follow-up
 
 - Investigate two recent `503 REVIEW_UNAVAILABLE` responses from the quest-review path. Existing request logs do not contain the upstream provider response, so the cause is not yet established.
+- Enable Supabase Auth leaked-password protection in the hosted project. The live security advisor currently reports it disabled.
 - Review production Supabase Auth settings separately from the repository's local-development `config.toml`; local settings do not prove the hosted project's password, confirmation, or MFA configuration.
 - Keep the Supabase advisor's no-policy notices for `client_error_events` and `system_private.review_rate_limits` under review. Both currently have no client access by design.
 - Do not drop the advisor's unused indexes solely from low usage counts; verify query workload before any removal.
