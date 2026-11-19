@@ -652,7 +652,11 @@ Deno.serve(async (req: Request) => {
       mode = modelConnected ? "OPENAI_RESPONSES_API" : "BUILT_IN_GUIDANCE";
       modelUsed = modelConnected ? model : null;
     } catch (error: any) {
-      console.error("OPENAI SYSTEM INTELLIGENCE FAILED", error);
+      console.error("[system-intelligence] model_request_failed", {
+        error_name: String(error?.name || "UNKNOWN_ERROR").slice(0, 80),
+        error_code: String(error?.code || "").slice(0, 80) || null,
+        status: Number(error?.status || 0) || null,
+      });
       modelError = publicModelWarning(error);
       mode = "OPENAI_RESPONSE_ERROR";
     }
