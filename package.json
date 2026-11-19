@@ -15,15 +15,14 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
-    "@vitejs/plugin-react": "^5.0.4",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "vite": "^7.1.7"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
     "esbuild": "0.28.2",
     "playwright": "1.62.1",
-    "vite": "^7.3.8"
+    "vite": "^7.3.8",
+    "@vitejs/plugin-react": "^5.0.4"
   }
 }
