@@ -12,6 +12,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119155125_index_objective_task_fk.sql` — added the missing index for `user_quest_objectives.task_id`.
 - `20261119155432_guard_legacy_daily_quest_duplicates.sql` — added a partial unique index for legacy quests without a catalog ID, keyed by player, assigned date, and normalized title.
 - `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
+- `20261119162732_proof_video_upload_support.sql` — no-op history marker. A direct SQL bucket update was reverted; future proof-bucket configuration must use the Supabase Storage API.
 
 The event tables remain readable and deletable by their owner. Canonical history writes are performed by trusted backend functions.
 
