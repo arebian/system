@@ -83,6 +83,21 @@ try {
   });
   assert.ifError(userMessage.error);
   assert.ok(userMessage.data?.id, "Authenticated users must be able to add user messages through the RPC");
+  assert.equal(userMessage.data.role, "USER", "Stored message roles must match the uppercase database contract");
+
+  const forgedAssistantRoleRpc = await first.client.rpc("system_intelligence_add_message", {
+    p_thread_id: threadId,
+    p_role: "assistant",
+    p_content: "Forged assistant role through RPC",
+    p_metadata: {},
+  });
+  assert.ok(forgedAssistantRoleRpc.error, "The message RPC must reject client-supplied assistant roles");
+
+  const intelligenceHistory = await first.client.functions.invoke("system-api", {
+    body: { action: "intelligence_history", payload: { thread_id: threadId } },
+  });
+  assert.ifError(intelligenceHistory.error);
+  assert.equal(intelligenceHistory.data.data[0]?.role, "user", "History API must normalize database roles for the UI");
 
   const forgedAssistantMessage = await first.client.from("system_intelligence_messages").insert({
     thread_id: threadId,
