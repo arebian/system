@@ -23,6 +23,7 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119162454_safe_player_character_reset.sql` — added an authenticated, user-scoped reset RPC that deletes all player-owned rows in `public` and `system_private`, then removes the profile while preserving the Supabase Auth account.
 - `20261119162732_proof_video_upload_support.sql` — no-op history marker. A direct SQL bucket update was reverted; future proof-bucket configuration must use the Supabase Storage API.
 - `20261119163527_lock_public_table_ddl_and_event_ledgers.sql` — removed `TRUNCATE`, `TRIGGER` and `REFERENCES` from current public tables and future postgres-owned public tables; made progression, journey and boss-damage ledgers read-only to client roles.
+- `20261119163623_revoke_public_table_maintain.sql` — removed PostgreSQL `MAINTAIN` from current public tables and future postgres-owned public tables.
 
 The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions.
 
@@ -32,6 +33,7 @@ The progression, journey and boss-damage ledgers remain readable only under thei
 - Every RLS policy found on a `public` table containing `user_id` uses `auth.uid()` in its ownership condition.
 - The `system_private` schema is not usable by `anon` or `authenticated`.
 - No public-schema SECURITY DEFINER function is executable by `anon`.
+- `anon` and `authenticated` no longer have `TRUNCATE`, `TRIGGER`, `REFERENCES` or `MAINTAIN` privileges on current public tables. The default privileges for future postgres-owned public tables are also restricted.
 - Of 89 public SECURITY DEFINER functions, 82 are callable by `authenticated`. All 82 were reviewed: 81 explicitly bind to `auth.uid()`; `system_assign_boss()` delegates to `system_weekly_boss_status_v1()`, which enforces the authenticated user context. The newly added `system_delete_player_data()` RPC is also bound to the caller through `auth.uid()` and is not executable by `anon`.
 - All public SECURITY DEFINER functions have a configured search path.
 - Internal progression helpers `system_award_xp()` and `system_add_attribute()` are not executable by client roles.
