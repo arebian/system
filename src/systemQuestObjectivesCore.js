@@ -20,8 +20,16 @@ export function recommendQuestObjectives(tasks = [], identity = {}, profile = {}
       ? 1
       : 2;
 
+  // The API catalog intentionally includes higher-level tasks so the UI can
+  // show the full library. Only recommend tasks the player can currently
+  // accept; the database RPC enforces the same min_level rule.
+  const playerLevel = Math.max(1, Number(profile?.level) || 1);
   const candidates = (tasks || []).filter(task =>
-    task?.id && task?.active !== false && ["HONOR","NOTE","TIMER","PHOTO","METRIC"].includes(String(task.proof_type || "HONOR").toUpperCase()) && DIFFICULTY_RANK[String(task.difficulty).toUpperCase()]
+    task?.id &&
+    task?.active !== false &&
+    Number(task.min_level || 1) <= playerLevel &&
+    ["HONOR","NOTE","TIMER","PHOTO","METRIC"].includes(String(task.proof_type || "HONOR").toUpperCase()) &&
+    DIFFICULTY_RANK[String(task.difficulty).toUpperCase()]
   );
 
   const sortByAdaptiveDifficulty = (a, b) => {

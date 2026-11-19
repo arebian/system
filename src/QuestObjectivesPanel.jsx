@@ -225,10 +225,10 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
   return (
     <section className="quest-objectives-panel">
       <div className="quest-objectives-head">
-        <div><small>QUEST EXPANSION // {String(pillar || "PILLAR").toUpperCase()} PILLAR</small><h4>THREE PILLAR MISSIONS</h4></div>
+        <div><small>{String(pillar || "PILLAR").toUpperCase()} QUEST // TO-DO LIST</small><h4>{String(pillar || "PILLAR").toUpperCase()} TO-DO LIST</h4></div>
         <span>{objectives.length ? `${summary.accepted + summary.completed}/${summary.total} APPROVED` : "3 REQUIRED"} · {pillarCement} CEMENT</span>
       </div>
-      <p>All three missions strengthen this quest's pillar. The other daily quests build different pillars. AI recommends; you decide.</p>
+      <p>Only {String(pillar || "selected").toUpperCase()} missions appear in this list. Complete all three to approve the {String(pillar || "selected").toUpperCase()} daily quest. AI recommends; you decide.</p>
       {!visibleObjectives.length ? (
         <button type="button" className="system-awareness-open" disabled={status !== "READY" || recommendations.length !== recommendationLimit || recommendationLimit < 1 || busy} onClick={generate}>
           {status === "LOADING" ? "LOADING TASK LIBRARY…" : busy ? "GENERATING THREE OBJECTIVES…" : "RETRY GENERATING 3 OBJECTIVES"}
@@ -238,7 +238,7 @@ export default function QuestObjectivesPanel({ userQuestId, pillar, identity, pr
           {visibleObjectives.map((item,index) => (
             <article className="quest-objective-item" key={item.id}>
               <div className="quest-objective-item-head">
-                <small>0{index+1} // {item.pillar}</small><strong>+{item.xp_reward} XP</strong>
+                <small>MISSION 0{index+1} // {item.pillar} PILLAR</small><strong>+{item.xp_reward} XP</strong>
               </div>
               <h5>{item.title_snapshot}</h5>
               <p>{item.objective_snapshot}</p>

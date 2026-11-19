@@ -1,4 +1,5 @@
 import React from "react";
+import { fetchPillarCement, fetchDailyPillarQuest } from "./systemCloud.js";
 import { todayKey, PATHS, scheduleDailyQuest, uid, hashString, SHIFT_PRESETS, formatClockLabel, normalizeProfile, normalizeSleepSchedule, addMinutesToClock } from "./systemProfileCore.js";
 import { xpRequired, getRank } from "./systemProgressionCore.js";
 import { useEffect, useRef, useMemo, useState, useLayoutEffect, useCallback } from "react";
@@ -2192,46 +2193,36 @@ export function MusicEngine({ enabled, volume, path, onStatus }) {
 }
 
 export async function deleteCloudProfile() {
-  const user =
-    await getCloudUser();
+  const user = await getCloudUser();
+  if (!user) return null;
 
-  if (!user) {
-    return;
+  const { data, error } = await supabase.functions.invoke("system-api", {
+    body: { action: "delete_player_data" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+
+  let localProfile = null;
+  try {
+    localProfile = JSON.parse(localStorage.getItem("systemProfile") || "null");
+  } catch {
+    localProfile = null;
   }
-
-  const tables = [
-    "progression_events",
-    "attributes",
-    "profiles",
-  ];
-
-  for (
-    const table
-    of tables
-  ) {
-    const key =
-      table ===
-      "profiles"
-        ? "id"
-        : "user_id";
-
-    const {
-      error,
-    } =
-      await supabase
-        .from(
-          table
-        )
-        .delete()
-        .eq(
-          key,
-          user.id
-        );
-
-    if (error) {
-      throw error;
-    }
+  const fingerprint = String(localProfile?.fingerprint || "").trim();
+  const awarenessKey = fingerprint || `${localProfile?.name || "PLAYER"}-${localProfile?.path || "COMMANDER"}`;
+  localStorage.removeItem(`systemAwarenessV1:${awarenessKey}`);
+  if (fingerprint) localStorage.removeItem(`systemCelebrations:${fingerprint}`);
+  for (const key of [
+    "systemProfile",
+    "systemIntelligenceThread",
+    "systemIntelligenceLocalChatId",
+    "systemIntelligenceLocalTranscript",
+    "systemIntelligenceHistoryV2",
+    "systemAdaptiveTrainingFocus",
+  ]) {
+    localStorage.removeItem(key);
   }
+  return data?.data ?? data;
 }
 
 export async function systemSignOut() {
@@ -2345,6 +2336,11 @@ export function Navigation({
       "QUESTS",
     ],
     [
+      "pillars",
+      "▥",
+      "PILLARS",
+    ],
+    [
       "training",
       "✦",
       "TRAINING",
@@ -2447,11 +2443,6 @@ export function DailySystemBriefing({
   const fuel = normalizeFuelState(profile.fuel);
   const fuelToday = summarizeFuelDay(fuel.logs[todayKey()], fuel.calorieTarget, fuel.proteinTarget);
   const recovery = awareness.recoveryDirective;
-  const mustDirective =
-    commandReady
-      ? dailyCommand.must_directive ||
-        null
-      : null;
   const classDirective =
     commandReady
       ? dailyCommand.class_directive ||
@@ -2464,29 +2455,6 @@ export function DailySystemBriefing({
         ?.unspent_credits
     ) || 0
   );
-
-  const mustReward =
-    mustDirective?.status ===
-    "ACTIVE"
-      ? "+" +
-        Number(
-          mustDirective.xp ||
-            0
-        ) +
-        " XP" +
-        (
-          Number(
-            mustDirective.penalty ||
-              0
-          ) > 0
-            ? " • -" +
-              Number(
-                mustDirective.penalty
-              ) +
-              " XP IF FAILED"
-            : ""
-        )
-      : "ACCEPT WHEN READY";
 
   const classReward =
     classDirective?.status ===
@@ -2519,18 +2487,18 @@ export function DailySystemBriefing({
 
       {commandReady ? (
         <div className="daily-command-grid">
-          <article className="daily-command-slot must">
-            <small>01 // MUST DIRECTIVE</small>
-            <strong>{mustDirective?.title || "NO MUST DIRECTIVE ACTIVE"}</strong>
-            <p>{mustDirective?.objective || "Open the Quest Board when you are ready to accept a 24-hour directive."}</p>
+          <article className="daily-command-slot pillar-summary">
+            <small>01 // DAILY QUEST STRUCTURE</small>
+            <strong>THREE PILLARS. THREE QUESTS.</strong>
+            <p>Discipline, Physical and Mental. Each quest contains three actionable missions. Complete all nine missions to earn approval and build your pillars.</p>
             <div>
-              <span>{mustDirective?.status === "ACTIVE" ? "ACTIVE • 24-HOUR CONTRACT" : "STANDBY"}</span>
-              <b>{mustReward}</b>
+              <span>3 MAIN QUESTS • 9 MISSIONS</span>
+              <b>ONE QUEST PER PILLAR</b>
             </div>
           </article>
 
           <article className="daily-command-slot class">
-            <small>02 // CLASS ACTION</small>
+            <small>04 // CLASS DIRECTIVE</small>
             <strong>{classDirective?.title || "CLASS DIRECTIVE UNAVAILABLE"}</strong>
             <p>{classDirective?.objective || "The class catalogue is synchronizing. Retry without resetting progression."}</p>
             <div>
@@ -2540,7 +2508,7 @@ export function DailySystemBriefing({
           </article>
 
           <article className="daily-command-slot progress">
-            <small>03 // FUEL & RECOVERY</small>
+            <small>05 // PROGRESSION & RECOVERY</small>
             <strong>{recovery ? recovery.target : fuel.goal + " • LOG YOUR NEXT MEAL"}</strong>
             <p>
               {recovery ? recovery.task : fuel.calorieTarget > 0
@@ -4258,6 +4226,8 @@ export function QuestPage({
     setMustSync,
   ] = useState({});
 
+  const [openedPillarQuestId, setOpenedPillarQuestId] = useState(null);
+
   // Must Quest acceptance can finish while another Quest action is in
   // progress. Keep the newest profile snapshot so an asynchronous acceptance
   // never writes an older copy of the UI state back over a verified result.
@@ -4499,7 +4469,8 @@ export function QuestPage({
         "DISCIPLINE",
       pillar: "DISCIPLINE",
       ...MUST_DISCIPLINE[0],
-      task: "Make today count by completing the three Discipline missions below. The main quest is approved automatically after all three pass review.",
+      displayName: "DISCIPLINE QUEST",
+      task: "Open the Discipline quest and complete its three Discipline missions. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "physical",
@@ -4515,7 +4486,8 @@ export function QuestPage({
           profile.path +
           "must2"
       ),
-      task: "Build the Physical pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
+      displayName: "PHYSICAL QUEST",
+      task: "Open the Physical quest and complete its three Physical missions. The main quest is approved automatically after all three pass review.",
     },
     {
       id: "focus",
@@ -4528,9 +4500,62 @@ export function QuestPage({
           profile.path +
           "must3"
       ),
-      task: "Build the Mental pillar through the three specific missions below. The main quest is approved automatically after all three pass review.",
+      displayName: "MENTAL QUEST",
+      task: "Open the Mental quest and complete its three Mental missions. The main quest is approved automatically after all three pass review.",
     },
   ];
+
+  const openedPillarQuest = mustQuests.find(quest => quest.id === openedPillarQuestId) || null;
+  const openedPillarKey = openedPillarQuest ? date + "-" + openedPillarQuest.id : null;
+  const openedPillarState = openedPillarKey ? profile.mustState[openedPillarKey] : null;
+  const openedPillarSyncStatus = openedPillarKey
+    ? (mustSync[openedPillarKey] || (openedPillarState?.accepted && openedPillarState?.expiresAt ? "READY" : "SYNCING"))
+    : "SYNCING";
+
+  useEffect(() => {
+    if (!openedPillarQuest || !openedPillarKey || openedPillarState?.backendQuestId) return undefined;
+
+    let active = true;
+    setMustSync(current => ({ ...current, [openedPillarKey]: "SYNCING" }));
+
+    fetchDailyPillarQuest(openedPillarQuest.pillar, date)
+      .then(serverQuest => {
+        if (!active) return;
+        if (!serverQuest?.id) {
+          setMustSync(current => ({ ...current, [openedPillarKey]: "ERROR" }));
+          return;
+        }
+
+        const currentState = latestProfileRef.current?.mustState || profile.mustState || {};
+        const existing = currentState[openedPillarKey] || {};
+        commitMustState({
+          ...currentState,
+          [openedPillarKey]: {
+            ...existing,
+            accepted: true,
+            mandatory: true,
+            completed: serverQuest.status === "COMPLETED",
+            failed: false,
+            penaltyApplied: false,
+            penalty: Number(serverQuest.xp_penalty ?? openedPillarQuest.penalty ?? 0),
+            name: openedPillarQuest.name,
+            date,
+            acceptedAt: serverQuest.accepted_at || existing.acceptedAt || null,
+            expiresAt: serverQuest.expires_at || existing.expiresAt || null,
+            backendQuestId: serverQuest.id,
+            authoritative: true,
+            syncStatus: "READY",
+          },
+        });
+        setMustSync(current => ({ ...current, [openedPillarKey]: "READY" }));
+      })
+      .catch(error => {
+        console.warn("DAILY PILLAR QUEST RECOVERY FAILED:", error);
+        if (active) setMustSync(current => ({ ...current, [openedPillarKey]: "ERROR" }));
+      });
+
+    return () => { active = false; };
+  }, [openedPillarQuestId, openedPillarKey, openedPillarState?.backendQuestId, date]);
 
   useEffect(() => {
     let active = true;
@@ -4800,6 +4825,8 @@ export function QuestPage({
                 key,
               assignedFor:
                 date,
+              pillar:
+                quest.pillar,
             })
         );
 
@@ -6231,55 +6258,119 @@ export function QuestPage({
         </div>
       </article>
 
-      <SectionLabel
-        number="02"
-        title="CLASS"
-      />
+      {openedPillarQuest ? createPortal((
+        <section
+          className="pillar-quest-detail"
+          key={date + "-" + openedPillarQuest.id}
+          aria-labelledby="pillar-quest-detail-title"
+        >
+          <button
+            type="button"
+            className="pillar-quest-back"
+            onClick={() => setOpenedPillarQuestId(null)}
+          >
+            <span>←</span>
+            BACK TO THREE QUESTS
+          </button>
 
-      <QuestCard
-        quest={classQuest}
-        tag={profile.path}
-        completed={classDone}
-        proofType={
-          getQuestProofType(
-            classQuest,
-            profile.path
-          )
-        }
-        gpsTarget={
-          classGpsTarget
-        }
-        onStartGps={
-          startClassGpsMission
-        }
-        onComplete={() =>
-          requestQuestProof({
-            quest:
-              classQuest,
-            context:
-              profile.path,
-            onVerified:
-              (proof) =>
-                completeNormal(
-                  "class",
-                  classQuest,
-                  PATHS[
-                    profile.path
-                  ].bonus,
-                  proof
-                ),
-          })
-        }
-        accent
-      />
+          <div className="pillar-quest-detail-header">
+            <div>
+              <small>{openedPillarQuest.pillar} QUEST // DAILY MAIN QUEST</small>
+              <h2 id="pillar-quest-detail-title">{openedPillarQuest.displayName || openedPillarQuest.name}</h2>
+              <blockquote>"{openedPillarQuest.message}"</blockquote>
+            </div>
+            <div className="pillar-quest-detail-reward">
+              <small>QUEST REWARD</small>
+              <strong>+{openedPillarQuest.xp} XP</strong>
+              <span>FAILURE −{openedPillarQuest.penalty} XP</span>
+            </div>
+          </div>
 
-      <SectionLabel
-        number="03"
-        title="MUST QUESTS"
-        danger
-      />
+          <div className="pillar-quest-contract">
+            <div>
+              <small>MAIN QUEST OBJECTIVE</small>
+              <p>{openedPillarQuest.task}</p>
+            </div>
+            <div className="pillar-quest-time">
+              <small>{isMustStateReady(openedPillarState) ? "TIME REMAINING" : "QUEST STATUS"}</small>
+              <strong>
+                {isMustStateReady(openedPillarState)
+                  ? formatMustTime(
+                      new Date(openedPillarState.expiresAt).getTime() -
+                      (wakeClock + Number(openedPillarState.serverOffsetMs || 0))
+                    )
+                  : openedPillarState?.completed
+                    ? "COMPLETED"
+                    : openedPillarState?.failed || openedPillarState?.penaltyApplied
+                      ? "FAILED"
+                      : openedPillarSyncStatus === "ERROR"
+                        ? "SYNC FAILED"
+                        : "SYNCHRONIZING"}
+              </strong>
+            </div>
+          </div>
 
-      <div className="must-grid">
+          <div className="pillar-quest-mission-map">
+            <small>{openedPillarQuest.pillar} QUEST // {openedPillarQuest.pillar} MISSIONS</small>
+            <p>
+              This is the {openedPillarQuest.pillar} quest. All three missions in this list belong to the {openedPillarQuest.pillar} pillar.
+              Completing all three is required for this main quest to be approved.
+            </p>
+          </div>
+
+          {openedPillarState?.backendQuestId ? (
+            <QuestObjectivesPanel
+              key={openedPillarState.backendQuestId}
+              userQuestId={openedPillarState.backendQuestId}
+              pillar={openedPillarQuest.pillar}
+              identity={profile.identity}
+              profile={profile}
+              onProfileUpdated={applyAuthoritativeProfile}
+              onParentCompleted={() => {
+                const mustKey = openedPillarKey;
+                const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
+                commitMustState({
+                  ...currentMustState,
+                  [mustKey]: {
+                    ...(currentMustState[mustKey] || {}),
+                    accepted: true,
+                    mandatory: true,
+                    completed: true,
+                    failed: false,
+                    penaltyApplied: false,
+                    penalty: Number(currentMustState[mustKey]?.penalty ?? openedPillarQuest.penalty ?? 0),
+                    name: openedPillarQuest.name,
+                    date,
+                    backendQuestId: openedPillarState.backendQuestId,
+                    authoritative: true,
+                    syncStatus: "COMPLETED",
+                  },
+                });
+              }}
+            />
+          ) : (
+            <div className="pillar-quest-sync-panel">
+              <strong>MISSION LINK NOT READY</strong>
+              <p>The System is still confirming this daily quest. Your missions will appear here when the server confirms the quest link.</p>
+              <button
+                type="button"
+                disabled={openedPillarSyncStatus === "SYNCING"}
+                onClick={() => retryMustSync(openedPillarQuest)}
+              >
+                {openedPillarSyncStatus === "SYNCING" ? "SYNCHRONIZING..." : "RETRY QUEST SYNC"}
+              </button>
+            </div>
+          )}
+        </section>
+      ), document.querySelector(".app") || document.body) : (
+        <>
+          <SectionLabel
+            number="01"
+            title="THREE PILLAR QUESTS"
+            danger
+          />
+
+          <div className="must-grid">
         {mustQuests.map(
           (quest) => {
             const key =
@@ -6291,10 +6382,11 @@ export function QuestPage({
               profile.mustState[key];
 
             return (
-              <React.Fragment key={quest.id}>
+              <div className="must-quest-column" key={quest.id}>
               <MustCard
                 quest={quest}
                 state={state}
+                onOpenQuest={() => setOpenedPillarQuestId(quest.id)}
                 syncStatus={
                   mustSync[
                     key
@@ -6336,205 +6428,12 @@ export function QuestPage({
                   )
                 }
               />
-              {state?.backendQuestId && (
-                <QuestObjectivesPanel
-                  userQuestId={state.backendQuestId}
-                  pillar={quest.id === "discipline" ? "DISCIPLINE" : quest.id === "physical" ? "PHYSICAL" : "MENTAL"}
-                  identity={profile.identity}
-                  profile={profile}
-                  onProfileUpdated={applyAuthoritativeProfile}
-                  onParentCompleted={() => {
-                    const mustKey = date + "-" + quest.id;
-                    const currentMustState = latestProfileRef.current?.mustState || profile.mustState || {};
-                    commitMustState({
-                      ...currentMustState,
-                      [mustKey]: {
-                        ...(currentMustState[mustKey] || {}),
-                        accepted: true,
-                        mandatory: true,
-                        completed: true,
-                        failed: false,
-                        penaltyApplied: false,
-                        penalty: Number(currentMustState[mustKey]?.penalty ?? quest.penalty ?? 0),
-                        name: quest.name,
-                        date,
-                        backendQuestId: state.backendQuestId,
-                        authoritative: true,
-                        syncStatus: "COMPLETED",
-                      },
-                    });
-                  }}
-                />
-              )}
-              </React.Fragment>
+
+              </div>
             );
           }
         )}
       </div>
-
-      <SectionLabel
-        number="A"
-        title="ADAPTIVE DIRECTIVE"
-      />
-
-      <article
-        className={
-          "quest-card card3d adaptive-card " +
-          (
-            adaptiveStatus ===
-            "READY"
-              ? ""
-              : "adaptive-status-card"
-          )
-        }
-      >
-        <div className="quest-side">
-          ANALYSIS
-        </div>
-
-        {adaptiveStatus ===
-        "READY" &&
-        adaptiveQuest ? (
-          <div className="quest-body">
-            <div className="quest-top">
-              <div>
-                <span>
-                  {adaptiveQuest.category}
-                  {" • "}
-                  PRIORITY {adaptiveQuest.priority}
-                </span>
-
-                <h3>
-                  {adaptiveQuest.name}
-                </h3>
-              </div>
-
-              <strong>
-                +{adaptiveQuest.xp} XP
-              </strong>
-            </div>
-
-            <blockquote>
-              "{adaptiveQuest.reason}"
-            </blockquote>
-
-            <div className="objective">
-              <span>
-                SYSTEM OBJECTIVE
-              </span>
-
-              <p>
-                {adaptiveQuest.task}
-              </p>
-            </div>
-
-            <button
-              data-sfx="success"
-              type="button"
-              disabled={
-                Boolean(
-                  profile.dailyCompleted[
-                    date +
-                    "-adaptive-" +
-                    adaptiveQuest.code
-                  ]
-                )
-              }
-              onClick={() =>
-                requestQuestProof({
-                  quest:
-                    adaptiveQuest,
-                  context:
-                    "ADAPTIVE",
-                  onVerified:
-                    (proof) =>
-                      completeAdaptive(
-                        proof
-                      ),
-                })
-              }
-            >
-              {profile.dailyCompleted[
-                date +
-                "-adaptive-" +
-                adaptiveQuest.code
-              ]
-                ? "DIRECTIVE COMPLETE"
-                : "SUBMIT PROOF"}
-            </button>
-          </div>
-        ) : (
-          <div className="quest-body adaptive-status-body">
-            <div className="quest-top">
-              <div>
-                <span>
-                  LIVE ANALYSIS
-                </span>
-
-                <h3>
-                  {adaptiveStatus ===
-                  "LOADING"
-                    ? "CALIBRATING YOUR NEXT DIRECTIVE"
-                    : adaptiveStatus ===
-                        "AUTH_REQUIRED"
-                      ? "SIGN IN TO CALIBRATE"
-                      : adaptiveStatus ===
-                          "UNAVAILABLE"
-                        ? "NO COMPATIBLE DIRECTIVE"
-                        : "ADAPTIVE LINK NEEDS RETRY"}
-                </h3>
-              </div>
-            </div>
-
-            <p>
-              {adaptiveStatus ===
-              "LOADING"
-                ? "THE SYSTEM is comparing your recent movement, wealth, learning, focus and recovery signals."
-                : adaptiveStatus ===
-                    "AUTH_REQUIRED"
-                  ? "Adaptive directives are assigned from your signed-in progression profile."
-                  : adaptiveStatus ===
-                      "UNAVAILABLE"
-                    ? adaptiveQuest?.reason ||
-                      "The active catalog has no safe Standard directive for this profile yet."
-                    : "The directive catalog could not be reached. Retry without resetting any local progress."}
-            </p>
-
-            {adaptiveStatus !==
-            "LOADING" &&
-            adaptiveStatus !==
-              "AUTH_REQUIRED" && (
-              <>
-                {adaptiveError && (
-                  <small className="adaptive-status-code">
-                    {String(
-                      adaptiveError
-                    )
-                      .replace(
-                        /_/g,
-                        " "
-                      )
-                      .toUpperCase()}
-                  </small>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setAdaptiveRetryNonce(
-                      (previous) =>
-                        previous +
-                        1
-                    )
-                  }
-                >
-                  RETRY DIRECTIVE
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </article>
 
       <SectionLabel
         number="04"
@@ -6661,6 +6560,9 @@ export function QuestPage({
           Rare events are not guaranteed. The scanner can be used up to 3 times per day with a 4-hour recalibration between scans. Finding an event locks further scans for that day.
         </p>
       </div>
+
+        </>
+      )}
 
       {pendingProof && (
         <QuestProofModal
@@ -7262,7 +7164,7 @@ export function QuestProofModal({
             <SystemField label="PROOF IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) =>
                   setFile(
                     e.target
@@ -7295,7 +7197,7 @@ export function QuestProofModal({
             <SystemField label="PRIVATE VIDEO PROOF • 30–60 SECONDS RECOMMENDED • 35 MB MAX">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/mp4,video/webm,video/quicktime"
                 capture="user"
                 onChange={(e) =>
                   setFile(
@@ -7461,6 +7363,7 @@ export function MustCard({
   complete,
   fail,
   retrySync,
+  onOpenQuest,
   syncStatus = "SYNCING",
   proofType = "HONOR",
 }) {
@@ -7600,12 +7503,12 @@ export function MustCard({
       }
     >
       <div className="must-type">
-        {quest.type}
+        {quest.pillar || quest.type}
         {" • MANDATORY"}
       </div>
 
       <h3>
-        {quest.name}
+        {quest.displayName || quest.name}
       </h3>
 
       <blockquote>
@@ -7711,7 +7614,7 @@ export function MustCard({
               </div>
             )}
 
-            {syncFailed ? (
+            {syncFailed && (
               <button
                 type="button"
                 className="must-retry-button"
@@ -7719,14 +7622,14 @@ export function MustCard({
               >
                 RETRY DIRECTIVE SYNC
               </button>
-            ) : (
+            )}
+            {!quest.pillar && !syncFailed && (
               <button
                 data-sfx="success"
                 type="button"
                 disabled={
                   syncing ||
                   !ready ||
-                  Boolean(quest.pillar) ||
                   Boolean(
                     state?.completed ||
                     state?.failed ||
@@ -7735,11 +7638,7 @@ export function MustCard({
                 }
                 onClick={complete}
               >
-                {quest.pillar
-                  ? "COMPLETE THE THREE MISSIONS BELOW"
-                  : syncing
-                    ? "SYNCHRONIZING..."
-                    : "SUBMIT COMPLETION"}
+                {syncing ? "SYNCHRONIZING..." : "SUBMIT COMPLETION"}
               </button>
             )}
           </>
@@ -7761,6 +7660,17 @@ export function MustCard({
           className="failed-button"
         >
           FAILED — PENALTY APPLIED
+        </button>
+      )}
+
+      {quest.pillar && (
+        <button
+          type="button"
+          className="must-open-quest"
+          onClick={onOpenQuest}
+        >
+          OPEN QUEST
+          <span>→</span>
         </button>
       )}
     </article>
@@ -13047,7 +12957,7 @@ export function Training({
             <SystemField label="PHYSICAL PROOF — IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(event) =>
                   setMasteryProofFile(
                     event.target.files?.[0] ||
@@ -15534,7 +15444,7 @@ export function Journey({
         <SystemField label="PHOTO PROOF">
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={addPhoto}
           />
         </SystemField>
@@ -17944,6 +17854,127 @@ export function EvolutionModal({
   );
 }
 
+const SYSTEM_PILLARS = [
+  { id: "DISCIPLINE", name: "Discipline", focus: "Consistency, self-control and keeping commitments." },
+  { id: "PHYSICAL", name: "Physical", focus: "Strength, movement, fitness and recovery." },
+  { id: "MENTAL", name: "Mental", focus: "Focus, learning, reflection and resilience." },
+  { id: "SOCIAL", name: "Social", focus: "Relationships, communication and contribution." },
+  { id: "INTELLECT", name: "Intellect", focus: "Knowledge, curiosity and applied learning." },
+  { id: "SPIRITUAL", name: "Spiritual", focus: "Purpose, values and inner development." },
+  { id: "WEALTH", name: "Wealth", focus: "Financial discipline and long-term capability." },
+];
+
+function PillarStructure({ cement = 0, large = false, name = "PILLAR" }) {
+  const earned = Math.max(0, Number(cement) || 0);
+  const visibleCourses = Math.min(earned, 18);
+  return (
+    <div className={"pillar-architecture" + (large ? " is-large" : " is-mini")} role="img" aria-label={name + " structure with " + earned + " cement units earned"}>
+      <div className="pillar-god-roof">
+        <span className="pillar-roof-pediment" />
+        <span className="pillar-roof-beam" />
+        {large && <small>MASTER OF THE SELF</small>}
+      </div>
+      <div className="pillar-capital"><i /><i /><i /></div>
+      <div className="pillar-shaft">
+        {Array.from({ length: visibleCourses }, (_, index) => (
+          <i className="pillar-stone-course" key={index}><b /></i>
+        ))}
+        {earned === 0 && <span className="pillar-empty-course">FOUNDATION AWAITS</span>}
+        {earned > 18 && <span className="pillar-more-courses">+{earned - 18} MORE COURSES</span>}
+      </div>
+      <div className="pillar-base"><i /><i /><i /></div>
+      {large && <div className="pillar-ground-line" />}
+    </div>
+  );
+}
+
+export function PillarsPage() {
+  const [cement, setCement] = useState({});
+  const [status, setStatus] = useState("LOADING");
+  const [selected, setSelected] = useState("DISCIPLINE");
+
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled(SYSTEM_PILLARS.map(async pillar => [
+      pillar.id,
+      await fetchPillarCement(pillar.id),
+    ]))
+      .then(results => {
+        if (!active) return;
+        const next = {};
+        let failures = 0;
+        results.forEach(result => {
+          if (result.status === "fulfilled") next[result.value[0]] = result.value[1];
+          else failures += 1;
+        });
+        setCement(next);
+        setStatus(failures === SYSTEM_PILLARS.length ? "ERROR" : "READY");
+      });
+    return () => { active = false; };
+  }, []);
+
+  const activePillar = SYSTEM_PILLARS.find(item => item.id === selected) || SYSTEM_PILLARS[0];
+  const activeCement = Number(cement[activePillar.id] || 0);
+
+  return (
+    <section className="page pillars-page pillars-construction-page">
+      <header className="pillars-page-header">
+        <small>IDENTITY DEVELOPMENT // THE GREAT FOUNDATION</small>
+        <h1>BUILD YOUR LEGACY</h1>
+        <p>Every approved quest lays another stone. Build each pillar with earned cement. Build all seven pillars. The title at the summit is MASTER OF THE SELF.</p>
+      </header>
+
+      <div className="pillars-foundation-grid">
+        {SYSTEM_PILLARS.map((pillar, index) => {
+          const count = Number(cement[pillar.id] || 0);
+          return (
+            <button
+              type="button"
+              key={pillar.id}
+              className={"pillar-foundation-card" + (selected === pillar.id ? " is-selected" : "")}
+              onClick={() => setSelected(pillar.id)}
+              aria-pressed={selected === pillar.id}
+            >
+              <span className="pillar-foundation-index">PILLAR 0{index + 1}</span>
+              <strong>{pillar.name}</strong>
+              <PillarStructure cement={count} name={pillar.name} />
+              <span className="pillar-foundation-count">
+                {status === "LOADING" ? "—" : count}
+                <small>CEMENT EARNED</small>
+              </span>
+              <span className="pillar-foundation-focus">{pillar.focus}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <article className="pillar-foundation-detail pillar-construction-detail card3d">
+        <div className="pillar-detail-copy">
+          <small>UNDER CONSTRUCTION // {activePillar.id}</small>
+          <h2>{activePillar.name} PILLAR</h2>
+          <p>{activePillar.focus}</p>
+          <div className="pillar-construction-count">
+            <strong>{status === "LOADING" ? "—" : activeCement}</strong>
+            <span>CEMENT UNITS EARNED</span>
+          </div>
+          <p className="pillar-foundation-rule">
+            Each cement unit is added only after the System approves the parent quest: all three missions must be completed and reviewed. The daily quests currently build Discipline, Physical and Mental. The other pillars are shown as foundations until their dedicated quest paths are introduced.
+          </p>
+          <div className="pillar-god-tier-note">
+            <span>✦</span>
+            <div><b>MASTER OF THE SELF</b><small>The ultimate identity title: earned through mastery across all seven pillars. Its completion milestones will be defined with the achievement system.</small></div>
+          </div>
+          {status === "ERROR" && <small className="pillar-foundation-error">Some pillar records could not be loaded. Refresh this page to retry.</small>}
+        </div>
+        <div className="pillar-detail-structure">
+          <PillarStructure cement={activeCement} large name={activePillar.name} />
+          <span className="pillar-structure-caption">THE GREAT FOUNDATION • {activePillar.name.toUpperCase()}</span>
+        </div>
+      </article>
+    </section>
+  );
+}
+
 export function SystemGame() {
   const authoritativeProfileRef = useRef(null);
   const seenCelebrationsRef = useRef(new Set());
@@ -19375,6 +19406,8 @@ export function SystemGame() {
             }
           />
         )}
+
+        {tab === "pillars" && <PillarsPage />}
 
         <div
           className={

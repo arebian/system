@@ -17,8 +17,15 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
   return data;
 }
 
+function logSafeReviewDiagnostic(event: string, details: Record<string, unknown> = {}) {
+  console.error("[system-review]", { event, ...details });
+}
+
 async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetcher }: any) {
-  if (!apiKey) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+  if (!apiKey) {
+    logSafeReviewDiagnostic("provider_not_configured", { reason: "OPENAI_API_KEY_MISSING" });
+    throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 24000);
   try {
@@ -31,11 +38,55 @@ async function reasonAboutProof({ snapshot, proof, apiKey, model, imageUrl, fetc
         instructions: REVIEW_INSTRUCTIONS, input: [{ role: "user", content }],
         text: { format: { type: "json_schema", name: "quest_review", strict: true, schema: REVIEW_SCHEMA } } }),
     });
-    if (!response.ok) throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
-    const parsed = JSON.parse(responseText(await response.json()));
-    return guardReviewDecision(parsed, snapshot, proof);
-  } catch (error) {
+    if (!response.ok) {
+      logSafeReviewDiagnostic("provider_http_error", {
+        status: response.status,
+        model: String(model || "").slice(0, 80),
+        request_id: response.headers?.get?.("x-request-id") || null,
+        retry_after: response.headers?.get?.("retry-after") || null,
+      });
+      throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    }
+
+    let providerBody: unknown;
+    try {
+      providerBody = await response.json();
+    } catch (error: any) {
+      logSafeReviewDiagnostic("provider_invalid_json", {
+        model: String(model || "").slice(0, 80),
+        error_name: String(error?.name || "JSON_PARSE_ERROR").slice(0, 80),
+      });
+      throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(responseText(providerBody));
+    } catch (error: any) {
+      logSafeReviewDiagnostic("provider_invalid_payload", {
+        model: String(model || "").slice(0, 80),
+        error_name: String(error?.name || "PAYLOAD_PARSE_ERROR").slice(0, 80),
+      });
+      throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    }
+
+    try {
+      return guardReviewDecision(parsed, snapshot, proof);
+    } catch (error: any) {
+      logSafeReviewDiagnostic("review_validation_failed", {
+        model: String(model || "").slice(0, 80),
+        error_name: String(error?.name || "REVIEW_VALIDATION_ERROR").slice(0, 80),
+        error_code: String(error?.code || "").slice(0, 80) || null,
+      });
+      if (error instanceof PublicFailure) throw error;
+      throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
+    }
+  } catch (error: any) {
     if (error instanceof PublicFailure) throw error;
+    logSafeReviewDiagnostic("provider_request_failed", {
+      model: String(model || "").slice(0, 80),
+      error_name: String(error?.name || "UNKNOWN_ERROR").slice(0, 80),
+    });
     throw new PublicFailure("REVIEW_UNAVAILABLE", 503);
   } finally { clearTimeout(timeout); }
 }
@@ -64,7 +115,13 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       catch (error) { throw new PublicFailure(error instanceof Error ? error.message : "WEEKLY_PLAN_INVALID"); }
       const { data, error: saveError } = await makeAdmin().from("system_weekly_boss_plans")
         .insert({ user_id: userId, plan }).select("id,plan,expires_at").single();
-      if (saveError) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
+      if (saveError) {
+        logSafeReviewDiagnostic("weekly_plan_persist_failed", {
+          error_code: String(saveError.code || "").slice(0, 80) || null,
+          status: Number(saveError.status || 0) || null,
+        });
+        throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
+      }
       return { status: 200, body: { data } };
     }
     let proof = normalizeReviewProof(payload.proof);
@@ -130,7 +187,13 @@ export async function handleLivingSystemAction({ action, payload, userId, client
       user_id: userId, target_type: action === "review_quest" ? "QUEST" : action === "review_weekly_boss" ? "BOSS" : "OBJECTIVE", target_id: snapshot.target_id,
       assigned_for: snapshot.assigned_for || null, snapshot, proof, ...review, model,
     }).select("id,decision,reason,question,missing,expires_at").single();
-    if (error) throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
+    if (error) {
+      logSafeReviewDiagnostic("review_persist_failed", {
+        error_code: String(error.code || "").slice(0, 80) || null,
+        status: Number(error.status || 0) || null,
+      });
+      throw new PublicFailure("BACKEND_UPDATE_REQUIRED", 503);
+    }
     return { status: 200, body: { data } };
   } catch (error) {
     const failure = error instanceof PublicFailure ? error : new PublicFailure("SYSTEM_ACTION_FAILED", 500);

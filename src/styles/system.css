@@ -6571,31 +6571,18 @@ button {
     );
 }
 
-/* Light theme panels should feel tinted, not white */
+/* Light mode keeps the selected class atmosphere in every surface. */
 .app.light .card3d,
 .app.light .options,
 .app.light .urgent-modal {
   background:
     linear-gradient(
       145deg,
-      color-mix(
-        in srgb,
-        var(--panel-bg) 48%,
-        rgba(255,255,255,.58)
-      ),
-      color-mix(
-        in srgb,
-        var(--panel-bg) 36%,
-        rgba(236,241,247,.72)
-      )
+      color-mix(in srgb, var(--panel-bg) 88%, var(--accent) 12%),
+      color-mix(in srgb, var(--panel-bg) 92%, var(--secondary) 8%)
     );
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--accent) 15%,
-      rgba(25,42,60,.13)
-    );
+  border-color: color-mix(in srgb, var(--accent) 26%, rgba(25,42,60,.16));
+  box-shadow: 0 16px 32px rgba(30,35,48,.10), inset 0 1px 0 rgba(255,255,255,.34);
 }
 
 .app.light .top-bar,
@@ -18689,9 +18676,13 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .app.light .daily-command-briefing {
-  border-color: rgba(100, 60, 150, .2) !important;
-  background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(248, 244, 251, .98)) !important;
-  box-shadow: 0 16px 34px rgba(37, 25, 49, .10) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border)) !important;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--panel-bg) 86%, var(--accent) 14%),
+    color-mix(in srgb, var(--app-bg) 90%, var(--secondary) 10%)
+  ) !important;
+  box-shadow: 0 16px 34px rgba(37, 35, 45, .12), inset 0 1px 0 rgba(255,255,255,.28) !important;
 }
 
 .app.light .daily-command-briefing .system-awareness-briefing-head h2,
@@ -18700,8 +18691,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .app.light .daily-command-slot {
-  border-color: rgba(102, 77, 132, .18);
-  background: rgba(255, 255, 255, .72);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--panel-bg) 82%, var(--accent) 18%);
 }
 
 .app.light .daily-command-slot p,
@@ -18748,3 +18739,747 @@ input[type="range"]::-moz-range-thumb {
 .special-camera-frame > span { position: absolute; z-index: 1; top: 12px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 8px 12px; border-radius: 20px; white-space: nowrap; font-size: 11px; }
 .special-camera-frame video { width: 100%; transform: scaleX(-1); }
 .app.light .class-special-workspace p, .app.light .class-special-workspace small { color: #465260; }
+
+
+/* Daily Command pillar cards: keep all three foundations visually distinct. */
+.daily-command-slot.pillar { border-top: 2px solid var(--accent); }
+.daily-command-slot.pillar.discipline { --pillar-tint: #b7793f; }
+.daily-command-slot.pillar.physical { --pillar-tint: #22a879; }
+.daily-command-slot.pillar.mental { --pillar-tint: #8b5cf6; }
+.daily-command-slot.pillar { border-color: color-mix(in srgb, var(--pillar-tint, var(--accent)) 38%, var(--border)); }
+.daily-command-slot.pillar small { color: color-mix(in srgb, var(--pillar-tint, var(--accent)) 78%, var(--text, #ddd)); }
+.app.light .daily-command-slot strong { color: #202b36 !important; }
+.app.light .daily-command-slot p,
+.app.light .daily-command-slot span { color: #4d5967 !important; }
+.app.light .daily-command-slot b { color: color-mix(in srgb, var(--accent) 75%, #263241) !important; }
+
+
+/* Light-mode atmosphere uses each class's own accent and secondary colors. */
+.app.light[class*="class-"] {
+  background:
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 38%),
+    radial-gradient(circle at 88% 22%, color-mix(in srgb, var(--secondary) 13%, transparent), transparent 32%),
+    linear-gradient(180deg, var(--app-bg), color-mix(in srgb, var(--app-bg) 82%, var(--secondary) 18%));
+  background-attachment: fixed;
+}
+.app.light.class-mage .card3d {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--panel-bg) 88%, var(--accent) 12%),
+    color-mix(in srgb, var(--panel-bg) 92%, var(--secondary) 8%)
+  ) !important;
+}
+@media (max-width: 800px) {
+  .app.light[class*="class-"] { background-attachment: scroll; }
+}
+
+
+/* Pillar quest board: each tile opens a dedicated mission view. */
+.must-grid > .must-quest-column {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  align-self: start !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-bg);
+  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+}
+.must-quest-column > .must-card.card3d {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 20px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.must-quest-column > .must-card.card3d::before,
+.must-quest-column > .must-card.card3d::after {
+  display: none !important;
+}
+.must-open-quest {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel-bg) 88%, var(--accent) 12%);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .16em;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.must-open-quest:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--panel-bg) 78%, var(--accent) 22%);
+  transform: translateY(-1px);
+}
+.must-open-quest > span {
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* The selected pillar becomes its own animated quest-detail surface. */
+.pillar-quest-detail {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto 34px;
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 34%),
+    linear-gradient(145deg, color-mix(in srgb, var(--panel-bg) 96%, var(--accent) 4%), var(--panel-bg));
+  box-shadow: 0 24px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+  animation: pillarQuestEnter .42s cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes pillarQuestEnter {
+  from { opacity: 0; transform: translateY(18px) scale(.985); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.pillar-quest-back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .16em;
+  cursor: pointer;
+  opacity: .78;
+}
+.pillar-quest-back:hover { opacity: 1; color: var(--accent); }
+.pillar-quest-back span { font-size: 17px; line-height: 1; }
+.pillar-quest-detail-header {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: start;
+  gap: 24px;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+.pillar-quest-detail-header > div:first-child > small,
+.pillar-quest-mission-map > small {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .2em;
+}
+.pillar-quest-detail-header h2 {
+  margin: 10px 0 8px;
+  color: var(--text);
+  font-size: clamp(24px, 4vw, 38px);
+  letter-spacing: -.035em;
+}
+.pillar-quest-detail-header blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent);
+  color: var(--muted, var(--text));
+  opacity: .78;
+  font-size: 13px;
+}
+.pillar-quest-detail-reward {
+  display: grid;
+  gap: 7px;
+  min-width: 142px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel-bg) 84%, var(--accent) 16%);
+}
+.pillar-quest-detail-reward small,
+.pillar-quest-time small,
+.pillar-quest-contract small {
+  font-size: 8px;
+  letter-spacing: .16em;
+  opacity: .66;
+}
+.pillar-quest-detail-reward strong {
+  color: var(--success, #34d399);
+  font-size: 22px;
+}
+.pillar-quest-detail-reward span {
+  color: #f87171;
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+.pillar-quest-contract {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel-bg) 90%, var(--accent) 10%);
+}
+.pillar-quest-contract p {
+  margin: 7px 0 0;
+  line-height: 1.65;
+  opacity: .82;
+  font-size: 12px;
+}
+.pillar-quest-time {
+  display: grid;
+  gap: 8px;
+  min-width: 145px;
+  text-align: right;
+}
+.pillar-quest-time strong {
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 19px;
+  letter-spacing: .1em;
+}
+.pillar-quest-mission-map {
+  padding: 16px 18px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel-bg));
+}
+.pillar-quest-mission-map p {
+  margin: 7px 0 0;
+  line-height: 1.65;
+  font-size: 12px;
+  opacity: .82;
+}
+.pillar-quest-detail > .quest-objectives-panel {
+  margin: 0 !important;
+  padding: 20px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 13px !important;
+  background: color-mix(in srgb, var(--panel-bg) 93%, var(--accent) 7%) !important;
+  box-shadow: none !important;
+}
+.pillar-quest-detail .quest-objectives-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  align-items: start;
+  gap: 12px;
+}
+.pillar-quest-detail .quest-objective-item {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-bg) 88%, var(--accent) 12%);
+}
+.pillar-quest-sync-panel {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel-bg) 90%, var(--accent) 10%);
+}
+.pillar-quest-sync-panel > strong { color: var(--accent); letter-spacing: .12em; font-size: 10px; }
+.pillar-quest-sync-panel p { margin: 0; font-size: 12px; line-height: 1.6; opacity: .78; }
+.pillar-quest-sync-panel button {
+  justify-self: start;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+@media (max-width: 850px) {
+  .pillar-quest-detail-header { grid-template-columns: 1fr; }
+  .pillar-quest-detail-reward { grid-template-columns: repeat(3,auto); align-items: center; justify-content: start; }
+  .pillar-quest-detail .quest-objectives-list { grid-template-columns: 1fr; }
+  .pillar-quest-contract { grid-template-columns: 1fr; }
+  .pillar-quest-time { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pillar-quest-detail { animation: none; }
+  .must-open-quest { transition: none; }
+}
+
+/* Daily Command explains the three-quest structure without duplicating the
+   interactive quest cards shown on the Quest Board. */
+.daily-command-slot.pillar-summary {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--panel-bg) 90%, var(--accent) 10%);
+}
+.daily-command-slot.pillar-summary strong {
+  letter-spacing: .04em;
+}
+
+
+/* =========================================================
+   SYSTEM TYPOGRAPHY UPGRADE — MANROPE + SPACE GROTESK
+   ========================================================= */
+:root {
+  --system-font-ui: "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --system-font-display: "Space Grotesk", "Manrope", sans-serif;
+}
+
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--system-font-ui);
+}
+
+.app {
+  font-family: var(--system-font-ui);
+  font-feature-settings: "ss01" on, "cv11" on;
+  font-optical-sizing: auto;
+}
+
+.app :is(h1, h2, h3, h4, h5, h6, .hero h1, .level-ring strong) {
+  font-family: var(--system-font-display);
+  letter-spacing: -0.035em;
+  font-weight: 650;
+  line-height: 1.12;
+}
+
+.brand strong {
+  letter-spacing: .22em;
+  font-weight: 800;
+}
+
+.navigation button {
+  font-family: var(--system-font-ui);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+
+.app p {
+  line-height: 1.65;
+}
+
+/* =========================================================
+   FULL-SCREEN PILLAR QUEST EXPERIENCE
+   ========================================================= */
+.pillar-quest-detail {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 240 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: clamp(22px, 4vw, 58px) clamp(16px, 5vw, 76px) 72px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 34%),
+    var(--app-bg) !important;
+  box-shadow: none !important;
+  animation: pillarQuestEnter .32s cubic-bezier(.2,.75,.25,1) both;
+  overscroll-behavior: contain;
+}
+
+.pillar-quest-detail > * {
+  width: min(100%, 1120px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes pillarQuestEnter {
+  from { opacity: 0; transform: translateY(18px) scale(.992); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pillar-quest-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin: 0 auto 30px !important;
+  padding: 0 15px;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-bg) 82%, transparent);
+  color: inherit;
+  font: 750 10px var(--system-font-ui);
+  letter-spacing: .12em;
+}
+
+.pillar-quest-back span {
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.pillar-quest-detail-header {
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+
+.pillar-quest-detail-header h2 {
+  margin: 12px 0;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -.055em;
+}
+
+.pillar-quest-detail-header blockquote {
+  max-width: 650px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.pillar-quest-contract,
+.pillar-quest-mission-map,
+.quest-objectives-panel {
+  margin-top: 18px;
+}
+
+.quest-objectives-panel {
+  width: min(100%, 1120px);
+}
+
+/* =========================================================
+   PILLARS FOUNDATION PAGE
+   ========================================================= */
+.pillars-page-header {
+  margin: 4px 0 28px;
+}
+
+.pillars-page-header > small,
+.pillar-foundation-index,
+.pillar-foundation-detail > div > small {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.pillars-page-header h1 {
+  margin: 10px 0;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -.055em;
+}
+
+.pillars-page-header p {
+  max-width: 650px;
+  color: var(--muted, inherit);
+  opacity: .72;
+  font-size: 15px;
+}
+
+.pillars-foundation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pillar-foundation-card {
+  position: relative;
+  min-height: 205px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  overflow: hidden;
+  text-align: left;
+  color: inherit;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 15px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--panel-bg) 93%, var(--accent) 4%), var(--panel-bg));
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+.pillar-foundation-card:hover,
+.pillar-foundation-card.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--sys-line, var(--border)));
+  box-shadow: 0 14px 36px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.05);
+  transform: translateY(-2px);
+}
+
+.pillar-foundation-card > strong {
+  font: 700 22px var(--system-font-display);
+  letter-spacing: -.035em;
+}
+
+.pillar-foundation-count {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--accent);
+  font: 700 30px var(--system-font-display);
+}
+
+.pillar-foundation-count small {
+  font: 800 9px var(--system-font-ui);
+  letter-spacing: .14em;
+  opacity: .68;
+}
+
+.pillar-foundation-focus {
+  max-width: 250px;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: .68;
+}
+
+.pillar-foundation-stack {
+  position: absolute;
+  right: 16px;
+  bottom: 15px;
+  display: flex;
+  gap: 3px;
+  align-items: end;
+  height: 22px;
+  opacity: .7;
+}
+
+.pillar-foundation-stack i {
+  width: 7px;
+  height: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.pillar-foundation-stack i:nth-child(2n) { height: 13px; }
+.pillar-foundation-stack i:nth-child(3n) { height: 18px; }
+
+.pillar-foundation-detail {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px 28px;
+  margin-top: 18px;
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.pillar-foundation-detail h2 {
+  margin: 8px 0;
+  font: 700 clamp(26px, 3vw, 38px) var(--system-font-display);
+}
+
+.pillar-foundation-detail p {
+  max-width: 760px;
+  font-size: 14px;
+  opacity: .75;
+}
+
+.pillar-foundation-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.pillar-foundation-total strong {
+  font: 700 42px var(--system-font-display);
+}
+
+.pillar-foundation-total span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.pillar-foundation-rule {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--sys-line, var(--border));
+}
+
+.pillar-foundation-error {
+  grid-column: 1 / -1;
+  color: #d97757;
+}
+
+@media (max-width: 900px) {
+  .pillars-foundation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .pillars-foundation-grid { grid-template-columns: 1fr; }
+  .pillar-foundation-card { min-height: 160px; }
+  .pillar-foundation-detail { grid-template-columns: 1fr; }
+  .pillar-foundation-total { align-items: flex-start; }
+  .pillar-quest-detail { padding: 18px 14px 50px !important; }
+}
+
+
+/* Pillars: architectural construction system */
+.pillars-construction-page .pillars-page-header { margin-bottom: 24px; }
+.pillars-construction-page .pillars-page-header h1 { letter-spacing: -.06em; }
+.pillars-construction-page .pillars-foundation-grid { align-items: stretch; }
+.pillars-construction-page .pillar-foundation-card {
+  min-height: 310px;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 14px 18px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 62%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 58%),
+    linear-gradient(155deg, color-mix(in srgb, var(--panel-bg) 96%, var(--accent) 4%), var(--panel-bg));
+}
+.pillars-construction-page .pillar-foundation-card > strong { font-size: 19px; }
+.pillars-construction-page .pillar-foundation-index { align-self: flex-start; }
+.pillars-construction-page .pillar-foundation-count { margin-top: auto; font-size: 25px; }
+.pillars-construction-page .pillar-foundation-focus { max-width: 240px; min-height: 34px; }
+.pillar-architecture {
+  --stone: color-mix(in srgb, var(--accent) 32%, #b9b3a5);
+  --stone-edge: color-mix(in srgb, var(--accent) 54%, #776f61);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 150px;
+  height: 156px;
+  margin: 5px auto 8px;
+  filter: drop-shadow(0 9px 9px rgba(0,0,0,.16));
+}
+.pillar-architecture.is-mini .pillar-god-roof { width: 84%; height: 22px; }
+.pillar-god-roof {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.pillar-roof-pediment {
+  width: 0;
+  height: 0;
+  border-left: 48px solid transparent;
+  border-right: 48px solid transparent;
+  border-bottom: 17px solid color-mix(in srgb, var(--accent) 23%, #aaa393);
+  filter: drop-shadow(0 1px 0 var(--stone-edge));
+}
+.pillar-roof-beam {
+  width: 100%;
+  height: 7px;
+  border: 1px solid var(--stone-edge);
+  background: linear-gradient(180deg, #d0c8b7, #8d8578);
+  box-shadow: 0 3px 0 rgba(0,0,0,.15);
+}
+.pillar-god-roof small { position: absolute; top: -16px; white-space: nowrap; font-size: 7px; font-weight: 900; letter-spacing: .16em; color: var(--accent); }
+.pillar-capital { z-index: 2; width: 70%; display: grid; gap: 2px; padding: 3px 0; }
+.pillar-capital i, .pillar-base i {
+  display: block;
+  height: 5px;
+  border: 1px solid var(--stone-edge);
+  background: linear-gradient(90deg, #827b70, #c9c0af 22%, #a79e8d 78%, #766f64);
+}
+.pillar-shaft {
+  position: relative;
+  width: 54%;
+  min-height: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px 4px;
+  border-left: 2px solid rgba(255,255,255,.17);
+  border-right: 2px solid rgba(0,0,0,.15);
+  background: linear-gradient(90deg, rgba(0,0,0,.14), rgba(255,255,255,.13) 18%, rgba(255,255,255,.04) 76%, rgba(0,0,0,.18));
+}
+.pillar-stone-course {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 6px;
+  flex: 0 0 6px;
+  border: 1px solid var(--stone-edge);
+  background: linear-gradient(180deg, #d0c8b7, #a69d8c 58%, #8c8476);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 1px 0 rgba(0,0,0,.12);
+}
+.pillar-stone-course:nth-child(3n + 2) { width: 92%; align-self: flex-end; }
+.pillar-stone-course:nth-child(3n) { width: 94%; align-self: flex-start; }
+.pillar-empty-course, .pillar-more-courses {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 120px;
+  transform: translate(-50%,-50%);
+  color: var(--accent);
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-align: center;
+  opacity: .8;
+}
+.pillar-more-courses { top: auto; bottom: -13px; font-size: 7px; }
+.pillar-base { width: 78%; display: grid; gap: 2px; padding-bottom: 2px; }
+.pillar-ground-line { width: 112%; height: 2px; margin-top: 2px; background: linear-gradient(90deg, transparent, var(--stone-edge), transparent); }
+.pillar-architecture.is-large {
+  max-width: 290px;
+  height: 330px;
+  margin: 0 auto;
+}
+.pillar-architecture.is-large .pillar-god-roof { height: 70px; }
+.pillar-architecture.is-large .pillar-roof-pediment {
+  border-left-width: 100px;
+  border-right-width: 100px;
+  border-bottom-width: 36px;
+}
+.pillar-architecture.is-large .pillar-roof-beam { height: 13px; }
+.pillar-architecture.is-large .pillar-capital { width: 76%; gap: 4px; padding: 6px 0; }
+.pillar-architecture.is-large .pillar-capital i, .pillar-architecture.is-large .pillar-base i { height: 10px; }
+.pillar-architecture.is-large .pillar-shaft { width: 58%; gap: 3px; padding: 6px 8px; min-height: 36px; }
+.pillar-architecture.is-large .pillar-stone-course { height: 12px; flex-basis: 12px; }
+.pillar-architecture.is-large .pillar-base { width: 86%; gap: 4px; padding-bottom: 5px; }
+.pillar-architecture.is-large .pillar-empty-course { font-size: 8px; }
+.pillar-architecture.is-large .pillar-more-courses { bottom: -18px; font-size: 9px; }
+.pillar-construction-detail { grid-template-columns: minmax(0,1fr) minmax(260px,.8fr); align-items: center; gap: 28px; }
+.pillar-detail-copy { min-width: 0; }
+.pillar-construction-count { display: flex; align-items: baseline; gap: 12px; margin: 20px 0; color: var(--accent); }
+.pillar-construction-count strong { font: 700 48px var(--system-font-display); }
+.pillar-construction-count span { font-size: 9px; font-weight: 900; letter-spacing: .15em; }
+.pillar-detail-structure {
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 22px;
+  border: 1px solid var(--sys-line, var(--border));
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 70%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 64%);
+}
+.pillar-structure-caption { margin-top: 14px; color: var(--muted, inherit); font-size: 8px; font-weight: 900; letter-spacing: .18em; text-align: center; }
+.pillar-god-tier-note { display: flex; align-items: flex-start; gap: 12px; margin-top: 18px; padding: 14px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--sys-line, var(--border))); border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.pillar-god-tier-note > span { color: var(--accent); font-size: 20px; }
+.pillar-god-tier-note div { display: grid; gap: 5px; }
+.pillar-god-tier-note b { font-size: 9px; letter-spacing: .15em; color: var(--accent); }
+.pillar-god-tier-note small { font-size: 11px; line-height: 1.55; opacity: .72; }
+@media (max-width: 900px) {
+  .pillar-construction-detail { grid-template-columns: 1fr; }
+  .pillar-detail-structure { min-height: 350px; }
+}
+@media (max-width: 560px) {
+  .pillars-construction-page .pillars-foundation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pillars-construction-page .pillar-foundation-card { min-height: 270px; padding: 12px 8px; }
+  .pillar-architecture.is-large { height: 290px; }
+}

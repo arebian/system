@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { QuestProofModal, Inventory, MusicEngine } from "../../src/SystemGame.jsx";
 import WeeklyBoss from "../../src/WeeklyBoss.jsx";
 import AchievementCelebration from "../../src/AchievementCelebration.jsx";
-import { achievementEvents } from "../../src/systemAchievementCore.js";
 import { normalizeProfile } from "../../src/systemProfileCore.js";
 import "../../src/styles/system.css";
 import "../../src/styles/stability.css";
@@ -20,7 +19,19 @@ function Harness() {
   const [musicPath, setMusicPath] = useState("MAGE");
   const [musicStatus, setMusicStatus] = useState("PAUSED");
   const mode = new URLSearchParams(location.search).get("mode");
-  const event = achievementEvents(window.qaProfile, { ...window.qaProfile, level: 11, attributes: { ...window.qaProfile.attributes, DISCIPLINE: window.qaProfile.attributes.DISCIPLINE + 2 } })[0];
+  // Keep the visual component test deterministic; achievementEvents has its
+  // own unit coverage and should not gate this isolated presentation fixture.
+  const event = {
+    id: "rank:11",
+    kind: "RANK",
+    title: "RANK ADVANCED",
+    name: "D-RANK",
+    description: "Your effort is becoming progress.",
+    level: 11,
+    rank: "D-RANK",
+    xp: 0,
+    gains: [],
+  };
   return <div className={mode === "appearance" ? "app light class-assassin" : "app dark class-mage"} style={{ "--accent": mode === "appearance" ? "#ef4444" : "#a855f7", "--app-bg": mode === "appearance" ? "#fff4f4" : "#07040d", "--panel-bg": mode === "appearance" ? "#fff8f8" : "#13091d", padding: 20, minHeight: "100vh" }}>
     <button id="previous-focus">QA FOCUS TARGET</button>
     {mode === "celebration" && !dismissed && <AchievementCelebration event={event} onSound={() => { window.qaSounds = (window.qaSounds || 0) + 1; }} onDismiss={() => setDismissed(true)}/>}

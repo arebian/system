@@ -125,7 +125,23 @@ async function invokeSystemApi(action, payload = {}, options = {}) {
   );
 
   if (error) {
-    throw error;
+    // Supabase wraps non-2xx Edge Function responses in FunctionsHttpError.
+    // Read the response body so the UI can show the backend's actionable
+    // error code instead of the generic "non-2xx status code" message.
+    let edgeFailure = null;
+    try {
+      const response = error.context?.clone
+        ? error.context.clone()
+        : error.context;
+      if (response?.json) edgeFailure = await response.json();
+    } catch {
+      // Keep the original transport error when no JSON body is available.
+    }
+    const code = edgeFailure?.error || edgeFailure?.code || null;
+    const failure = new Error(code || error.message || "SYSTEM_API_REQUEST_FAILED");
+    failure.code = code || error.name || "SYSTEM_API_ERROR";
+    failure.cause = error;
+    throw failure;
   }
 
   if (data?.error) {
@@ -620,6 +636,26 @@ export async function fetchQuestTaskLibrary() {
     .order("min_level", { ascending: true });
   if (error) throw error;
   return data || [];
+}
+
+export async function fetchDailyPillarQuest(pillar, assignedFor) {
+  const target = String(pillar || "").trim().toUpperCase();
+  const date = String(assignedFor || "").trim();
+  if (!target || !date) return null;
+
+  const { data, error } = await supabase
+    .from("user_quests")
+    .select("id,category,status,assigned_for,expires_at,accepted_at,created_at,xp_penalty,metadata")
+    .eq("assigned_for", date)
+    .filter("metadata->>pillar_quest", "eq", "true")
+    .filter("metadata->>target_pillar", "eq", target)
+    .in("status", ["ACCEPTED", "COMPLETED"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
 }
 
 export async function fetchPillarCement(pillar) {
@@ -3539,6 +3575,15 @@ export function syncStructuredProfile() {
 const MAX_PROOF_UPLOAD_BYTES =
   35 * 1024 * 1024;
 
+const ALLOWED_PROOF_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+
 export async function uploadProofFile(
   file
 ) {
@@ -3546,6 +3591,11 @@ export async function uploadProofFile(
     throw new Error(
       "PROOF_FILE_REQUIRED"
     );
+  }
+
+  const mimeType = String(file.type || "").trim().toLowerCase();
+  if (!ALLOWED_PROOF_MIME_TYPES.has(mimeType)) {
+    throw new Error("PROOF_FILE_TYPE_NOT_SUPPORTED");
   }
 
   if (

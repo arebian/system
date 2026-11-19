@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { cleanAwarenessContext, cleanGuidanceSnapshot, cleanServerContext } from "../_shared/intelligenceContextCore.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -276,51 +277,6 @@ function safeArgs(raw: unknown) {
 
 function compactResource(resource: any) {
   return JSON.parse(JSON.stringify(resource));
-}
-
-function cleanGuidanceSnapshot(raw: unknown) {
-  const source = raw && typeof raw === "object" && !Array.isArray(raw)
-    ? raw as Record<string, any>
-    : {};
-  const rawBoss = source.active_boss && typeof source.active_boss === "object"
-    ? source.active_boss as Record<string, any>
-    : null;
-  const rawMusts = Array.isArray(source.active_musts) ? source.active_musts : [];
-
-  return {
-    class: cleanText(source.class || source.path, 32).toUpperCase(),
-    level: clampInt(source.level, 1, 100000, 1),
-    xp: clampInt(source.xp, 0, 100000000, 0),
-    streak: clampInt(source.streak, 0, 100000, 0),
-    momentum: clampInt(source.momentum, 0, 100000, 0),
-    completedQuests: clampInt(source.completed_quests, 0, 1000000, 0),
-    fuelGoal: cleanText(source.fuel_goal, 16).toUpperCase(),
-    dailyMinutes: clampInt(source.daily_minutes, 0, 180, 0),
-    fuelToday: {
-      calories: clampInt(source.fuel_today?.calories, 0, 30000, 0),
-      protein: clampInt(source.fuel_today?.protein, 0, 3000, 0),
-      calorieTarget: clampInt(source.calorie_target, 0, 10000, 0),
-      proteinTarget: clampInt(source.protein_target, 0, 1000, 0),
-    },
-    recovery: source.recovery && typeof source.recovery === "object"
-      ? {target:cleanText(source.recovery.target,80),task:cleanText(source.recovery.task,400)} : null,
-    raidEntryKeyDetected: Boolean(source.raid_entry_key_detected),
-    activeBoss: rawBoss
-      ? {
-          name: cleanText(rawBoss.name, 160),
-          rank: cleanText(rawBoss.rank, 16).toUpperCase(),
-          hp: clampInt(rawBoss.hp, 0, 100000000, 0),
-          maxHp: clampInt(rawBoss.max_hp, 0, 100000000, 0),
-        }
-      : null,
-    activeMusts: rawMusts
-      .slice(0, 4)
-      .map((item: any) => ({
-        name: cleanText(item?.name, 160),
-        expiresAt: cleanText(item?.expires_at, 80),
-      }))
-      .filter((item: any) => item.name),
-  };
 }
 
 function builtInAnswer(message: string, context: any, awareness: any, clientContext: any = {}) {
@@ -605,9 +561,7 @@ Deno.serve(async (req: Request) => {
   const message = cleanText(body?.message, 4000);
   if (!message) return json({ error: "INVALID_MESSAGE" }, 400);
 
-  const awareness = body?.awareness && typeof body.awareness === "object"
-    ? body.awareness
-    : null;
+  const awareness = cleanAwarenessContext(body?.awareness);
 
   // This is guidance-only context from the current browser view. It is never
   // used to authorize, award or unlock anything; Supabase remains authoritative.
@@ -633,6 +587,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: context, error: contextError } = await supabase.rpc("system_intelligence_context");
   if (contextError) return json({ error: contextError.message }, 400);
+  const safeContext = cleanServerContext(context);
 
   const service = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -644,37 +599,30 @@ Deno.serve(async (req: Request) => {
     .select("role,content,created_at")
     .eq("thread_id", threadId)
     .eq("user_id", userData.user.id)
-    .in("role", ["user", "assistant"])
+    .in("role", ["USER", "ASSISTANT"])
     .order("created_at", { ascending: true })
     .limit(18);
 
   const transcript = (Array.isArray(transcriptRows) ? transcriptRows : [])
     .map((row: any) => ({
-      role: row.role === "assistant" ? "assistant" : "user",
+      role: String(row.role || "").toLowerCase() === "assistant" ? "assistant" : "user",
       content: cleanText(row.content, 5000),
     }))
     .filter((row: any) => row.content);
 
-  const player = context?.profile || context?.player || {};
+  const player = safeContext.profile;
   const { data: creditRows } = await supabase.from("attribute_credit_ledger")
     .select("credits_awarded,credits_spent").eq("user_id", userData.user.id).limit(1000);
   const unspentCredits = Array.isArray(creditRows) ? creditRows.reduce((sum:any,row:any) => sum + Math.max(0, Number(row.credits_awarded) - Number(row.credits_spent)), 0) : null;
   const contextBlock = JSON.stringify({
-    player: {
-      name: player?.name || null,
-      class: player?.path || player?.class || null,
-      level: player?.level || null,
-      xp: player?.xp ?? null,
-      streak: player?.streak ?? null,
-      momentum: player?.momentum ?? null,
-    },
-    attributes: context?.attributes || player?.attributes || null,
-    active_boss: context?.active_boss || context?.activeBoss || null,
-    active_quests: context?.active_quests || context?.activeQuests || null,
+    player,
+    attributes: safeContext.attributes,
+    active_boss: safeContext.active_boss,
+    active_quests: safeContext.active_quests,
     unspent_attribute_credits: unspentCredits,
-    routine: context?.routine || null,
-    foundation_plan: player?.profile_data?.foundationScan || null,
-    fuel_plan: player?.profile_data?.fuel || null,
+    routine: safeContext.routine,
+    foundation_plan: safeContext.foundation_plan,
+    fuel_plan: safeContext.fuel_plan,
     browser_guidance_snapshot: clientGuidance,
     awareness,
   }).slice(0, 18000);
@@ -704,14 +652,18 @@ Deno.serve(async (req: Request) => {
       mode = modelConnected ? "OPENAI_RESPONSES_API" : "BUILT_IN_GUIDANCE";
       modelUsed = modelConnected ? model : null;
     } catch (error: any) {
-      console.error("OPENAI SYSTEM INTELLIGENCE FAILED", error);
+      console.error("[system-intelligence] model_request_failed", {
+        error_name: String(error?.name || "UNKNOWN_ERROR").slice(0, 80),
+        error_code: String(error?.code || "").slice(0, 80) || null,
+        status: Number(error?.status || 0) || null,
+      });
       modelError = publicModelWarning(error);
       mode = "OPENAI_RESPONSE_ERROR";
     }
   }
 
   if (!answer) {
-    answer = builtInAnswer(message, context, awareness, clientGuidance);
+    answer = builtInAnswer(message, safeContext, awareness, clientGuidance);
     if (!modelConnected && mode === "OPENAI_RESPONSE_PENDING") {
       mode = "BUILT_IN_GUIDANCE";
     }
@@ -722,7 +674,7 @@ Deno.serve(async (req: Request) => {
     .insert({
       thread_id: threadId,
       user_id: userData.user.id,
-      role: "assistant",
+      role: "ASSISTANT",
       content: answer,
       metadata: {
         mode,
