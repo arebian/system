@@ -17882,7 +17882,7 @@ function PillarStructure({ cement = 0, large = false, name = "PILLAR" }) {
       <div className="pillar-god-roof">
         <span className="pillar-roof-pediment" />
         <span className="pillar-roof-beam" />
-        {large && <small>GOD TIER • FINAL ROOF</small>}
+        {large && <small>MASTER OF THE SELF</small>}
       </div>
       <div className="pillar-capital"><i /><i /><i /></div>
       <div className="pillar-shaft">
@@ -17931,7 +17931,7 @@ export function PillarsPage() {
       <header className="pillars-page-header">
         <small>IDENTITY DEVELOPMENT // THE GREAT FOUNDATION</small>
         <h1>BUILD YOUR LEGACY</h1>
-        <p>Every approved quest lays another stone. Build each pillar with earned cement. One day, the final roof will crown the work.</p>
+        <p>Every approved quest lays another stone. Build each pillar with earned cement. Build all seven pillars. The title at the summit is MASTER OF THE SELF.</p>
       </header>
 
       <div className="pillars-foundation-grid">
@@ -17972,7 +17972,7 @@ export function PillarsPage() {
           </p>
           <div className="pillar-god-tier-note">
             <span>✦</span>
-            <div><b>GOD TIER ACHIEVEMENT</b><small>The final roof is the crown of a completed pillar. Its unlock requirement will be defined with the achievement system.</small></div>
+            <div><b>MASTER OF THE SELF</b><small>The ultimate identity title: earned through mastery across all seven pillars. Its completion milestones will be defined with the achievement system.</small></div>
           </div>
           {status === "ERROR" && <small className="pillar-foundation-error">Some pillar records could not be loaded. Refresh this page to retry.</small>}
         </div>
