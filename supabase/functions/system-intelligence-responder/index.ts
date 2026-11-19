@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { cleanAwarenessContext, cleanGuidanceSnapshot } from "../_shared/intelligenceContextCore.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -276,51 +277,6 @@ function safeArgs(raw: unknown) {
 
 function compactResource(resource: any) {
   return JSON.parse(JSON.stringify(resource));
-}
-
-function cleanGuidanceSnapshot(raw: unknown) {
-  const source = raw && typeof raw === "object" && !Array.isArray(raw)
-    ? raw as Record<string, any>
-    : {};
-  const rawBoss = source.active_boss && typeof source.active_boss === "object"
-    ? source.active_boss as Record<string, any>
-    : null;
-  const rawMusts = Array.isArray(source.active_musts) ? source.active_musts : [];
-
-  return {
-    class: cleanText(source.class || source.path, 32).toUpperCase(),
-    level: clampInt(source.level, 1, 100000, 1),
-    xp: clampInt(source.xp, 0, 100000000, 0),
-    streak: clampInt(source.streak, 0, 100000, 0),
-    momentum: clampInt(source.momentum, 0, 100000, 0),
-    completedQuests: clampInt(source.completed_quests, 0, 1000000, 0),
-    fuelGoal: cleanText(source.fuel_goal, 16).toUpperCase(),
-    dailyMinutes: clampInt(source.daily_minutes, 0, 180, 0),
-    fuelToday: {
-      calories: clampInt(source.fuel_today?.calories, 0, 30000, 0),
-      protein: clampInt(source.fuel_today?.protein, 0, 3000, 0),
-      calorieTarget: clampInt(source.calorie_target, 0, 10000, 0),
-      proteinTarget: clampInt(source.protein_target, 0, 1000, 0),
-    },
-    recovery: source.recovery && typeof source.recovery === "object"
-      ? {target:cleanText(source.recovery.target,80),task:cleanText(source.recovery.task,400)} : null,
-    raidEntryKeyDetected: Boolean(source.raid_entry_key_detected),
-    activeBoss: rawBoss
-      ? {
-          name: cleanText(rawBoss.name, 160),
-          rank: cleanText(rawBoss.rank, 16).toUpperCase(),
-          hp: clampInt(rawBoss.hp, 0, 100000000, 0),
-          maxHp: clampInt(rawBoss.max_hp, 0, 100000000, 0),
-        }
-      : null,
-    activeMusts: rawMusts
-      .slice(0, 4)
-      .map((item: any) => ({
-        name: cleanText(item?.name, 160),
-        expiresAt: cleanText(item?.expires_at, 80),
-      }))
-      .filter((item: any) => item.name),
-  };
 }
 
 function builtInAnswer(message: string, context: any, awareness: any, clientContext: any = {}) {
@@ -605,9 +561,7 @@ Deno.serve(async (req: Request) => {
   const message = cleanText(body?.message, 4000);
   if (!message) return json({ error: "INVALID_MESSAGE" }, 400);
 
-  const awareness = body?.awareness && typeof body.awareness === "object"
-    ? body.awareness
-    : null;
+  const awareness = cleanAwarenessContext(body?.awareness);
 
   // This is guidance-only context from the current browser view. It is never
   // used to authorize, award or unlock anything; Supabase remains authoritative.
