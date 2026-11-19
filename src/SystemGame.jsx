@@ -6372,7 +6372,7 @@ export function QuestPage({
             </div>
           )}
         </section>
-      ), document.body) : (
+      ), document.querySelector(".app") || document.body) : (
         <>
           <SectionLabel
             number="01"
