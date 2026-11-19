@@ -2193,46 +2193,36 @@ export function MusicEngine({ enabled, volume, path, onStatus }) {
 }
 
 export async function deleteCloudProfile() {
-  const user =
-    await getCloudUser();
+  const user = await getCloudUser();
+  if (!user) return null;
 
-  if (!user) {
-    return;
+  const { data, error } = await supabase.functions.invoke("system-api", {
+    body: { action: "delete_player_data" },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+
+  let localProfile = null;
+  try {
+    localProfile = JSON.parse(localStorage.getItem("systemProfile") || "null");
+  } catch {
+    localProfile = null;
   }
-
-  const tables = [
-    "progression_events",
-    "attributes",
-    "profiles",
-  ];
-
-  for (
-    const table
-    of tables
-  ) {
-    const key =
-      table ===
-      "profiles"
-        ? "id"
-        : "user_id";
-
-    const {
-      error,
-    } =
-      await supabase
-        .from(
-          table
-        )
-        .delete()
-        .eq(
-          key,
-          user.id
-        );
-
-    if (error) {
-      throw error;
-    }
+  const fingerprint = String(localProfile?.fingerprint || "").trim();
+  const awarenessKey = fingerprint || `${localProfile?.name || "PLAYER"}-${localProfile?.path || "COMMANDER"}`;
+  localStorage.removeItem(`systemAwarenessV1:${awarenessKey}`);
+  if (fingerprint) localStorage.removeItem(`systemCelebrations:${fingerprint}`);
+  for (const key of [
+    "systemProfile",
+    "systemIntelligenceThread",
+    "systemIntelligenceLocalChatId",
+    "systemIntelligenceLocalTranscript",
+    "systemIntelligenceHistoryV2",
+    "systemAdaptiveTrainingFocus",
+  ]) {
+    localStorage.removeItem(key);
   }
+  return data?.data ?? data;
 }
 
 export async function systemSignOut() {
@@ -7174,7 +7164,7 @@ export function QuestProofModal({
             <SystemField label="PROOF IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) =>
                   setFile(
                     e.target
@@ -7207,7 +7197,7 @@ export function QuestProofModal({
             <SystemField label="PRIVATE VIDEO PROOF • 30–60 SECONDS RECOMMENDED • 35 MB MAX">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/mp4,video/webm,video/quicktime"
                 capture="user"
                 onChange={(e) =>
                   setFile(
@@ -12967,7 +12957,7 @@ export function Training({
             <SystemField label="PHYSICAL PROOF — IMAGE">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(event) =>
                   setMasteryProofFile(
                     event.target.files?.[0] ||
@@ -15454,7 +15444,7 @@ export function Journey({
         <SystemField label="PHOTO PROOF">
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={addPhoto}
           />
         </SystemField>

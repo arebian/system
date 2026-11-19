@@ -1,0 +1,6 @@
+-- No-op history marker.
+-- The attempted proof-bucket configuration change was reverted because
+-- Supabase Storage bucket settings must be changed through the Storage API,
+-- not by mutating the storage schema with SQL.
+-- The live proofs bucket remains private and restricted to JPEG, PNG and WebP
+-- uploads up to 5 MiB. See docs/FOUNDATION_SECURITY_AUDIT.md for the follow-up.
