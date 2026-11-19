@@ -68,7 +68,7 @@ export function cleanAwarenessContext(raw) {
   const source = record(raw);
   if (!Object.keys(source).length) return null;
   const activeSeconds = clampInt(source.activeTodaySeconds, 0, 86400, 0);
-  const ascension = String(source.ascensionReadinessSignals ?? "").match(/^(\\d{1,3})\\s*\\/\\s*(\\d{1,3})$/);
+  const ascension = String(source.ascensionReadinessSignals ?? "").match(/^(\d{1,3})\s*\/\s*(\d{1,3})$/);
   const numerator = ascension ? clampInt(ascension[1], 0, 100, 0) : 0;
   const denominator = ascension ? clampInt(ascension[2], 0, 100, 0) : 0;
 
