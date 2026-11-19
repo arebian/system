@@ -3575,6 +3575,15 @@ export function syncStructuredProfile() {
 const MAX_PROOF_UPLOAD_BYTES =
   35 * 1024 * 1024;
 
+const ALLOWED_PROOF_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+
 export async function uploadProofFile(
   file
 ) {
@@ -3582,6 +3591,11 @@ export async function uploadProofFile(
     throw new Error(
       "PROOF_FILE_REQUIRED"
     );
+  }
+
+  const mimeType = String(file.type || "").trim().toLowerCase();
+  if (!ALLOWED_PROOF_MIME_TYPES.has(mimeType)) {
+    throw new Error("PROOF_FILE_TYPE_NOT_SUPPORTED");
   }
 
   if (
