@@ -17874,6 +17874,30 @@ const SYSTEM_PILLARS = [
   { id: "WEALTH", name: "Wealth", focus: "Financial discipline and long-term capability." },
 ];
 
+function PillarStructure({ cement = 0, large = false, name = "PILLAR" }) {
+  const earned = Math.max(0, Number(cement) || 0);
+  const visibleCourses = Math.min(earned, 18);
+  return (
+    <div className={"pillar-architecture" + (large ? " is-large" : " is-mini")} role="img" aria-label={name + " structure with " + earned + " cement units earned"}>
+      <div className="pillar-god-roof">
+        <span className="pillar-roof-pediment" />
+        <span className="pillar-roof-beam" />
+        {large && <small>GOD TIER • FINAL ROOF</small>}
+      </div>
+      <div className="pillar-capital"><i /><i /><i /></div>
+      <div className="pillar-shaft">
+        {Array.from({ length: visibleCourses }, (_, index) => (
+          <i className="pillar-stone-course" key={index}><b /></i>
+        ))}
+        {earned === 0 && <span className="pillar-empty-course">FOUNDATION AWAITS</span>}
+        {earned > 18 && <span className="pillar-more-courses">+{earned - 18} MORE COURSES</span>}
+      </div>
+      <div className="pillar-base"><i /><i /><i /></div>
+      {large && <div className="pillar-ground-line" />}
+    </div>
+  );
+}
+
 export function PillarsPage() {
   const [cement, setCement] = useState({});
   const [status, setStatus] = useState("LOADING");
@@ -17903,53 +17927,59 @@ export function PillarsPage() {
   const activeCement = Number(cement[activePillar.id] || 0);
 
   return (
-    <section className="page pillars-page">
+    <section className="page pillars-page pillars-construction-page">
       <header className="pillars-page-header">
-        <small>IDENTITY DEVELOPMENT // FOUNDATION RECORD</small>
-        <h1>YOUR FOUNDATION</h1>
-        <p>Seven areas of growth. Every cement unit is earned through an approved quest, not estimated from activity.</p>
+        <small>IDENTITY DEVELOPMENT // THE GREAT FOUNDATION</small>
+        <h1>BUILD YOUR LEGACY</h1>
+        <p>Every approved quest lays another stone. Build each pillar with earned cement. One day, the final roof will crown the work.</p>
       </header>
 
       <div className="pillars-foundation-grid">
-        {SYSTEM_PILLARS.map((pillar, index) => (
-          <button
-            type="button"
-            key={pillar.id}
-            className={"pillar-foundation-card" + (selected === pillar.id ? " is-selected" : "")}
-            onClick={() => setSelected(pillar.id)}
-            aria-pressed={selected === pillar.id}
-          >
-            <span className="pillar-foundation-index">FOUNDATION 0{index + 1}</span>
-            <strong>{pillar.name}</strong>
-            <span className="pillar-foundation-count">
-              {status === "LOADING" ? "—" : Number(cement[pillar.id] || 0)}
-              <small>CEMENT</small>
-            </span>
-            <span className="pillar-foundation-focus">{pillar.focus}</span>
-            <span className="pillar-foundation-stack" aria-hidden="true">
-              {Array.from({ length: Math.min(Number(cement[pillar.id] || 0), 8) }, (_, block) => (
-                <i key={block} />
-              ))}
-            </span>
-          </button>
-        ))}
+        {SYSTEM_PILLARS.map((pillar, index) => {
+          const count = Number(cement[pillar.id] || 0);
+          return (
+            <button
+              type="button"
+              key={pillar.id}
+              className={"pillar-foundation-card" + (selected === pillar.id ? " is-selected" : "")}
+              onClick={() => setSelected(pillar.id)}
+              aria-pressed={selected === pillar.id}
+            >
+              <span className="pillar-foundation-index">PILLAR 0{index + 1}</span>
+              <strong>{pillar.name}</strong>
+              <PillarStructure cement={count} name={pillar.name} />
+              <span className="pillar-foundation-count">
+                {status === "LOADING" ? "—" : count}
+                <small>CEMENT EARNED</small>
+              </span>
+              <span className="pillar-foundation-focus">{pillar.focus}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <article className="pillar-foundation-detail card3d">
-        <div>
-          <small>SELECTED PILLAR // {activePillar.id}</small>
-          <h2>{activePillar.name}</h2>
+      <article className="pillar-foundation-detail pillar-construction-detail card3d">
+        <div className="pillar-detail-copy">
+          <small>UNDER CONSTRUCTION // {activePillar.id}</small>
+          <h2>{activePillar.name} PILLAR</h2>
           <p>{activePillar.focus}</p>
+          <div className="pillar-construction-count">
+            <strong>{status === "LOADING" ? "—" : activeCement}</strong>
+            <span>CEMENT UNITS EARNED</span>
+          </div>
+          <p className="pillar-foundation-rule">
+            Each cement unit is added only after the System approves the parent quest: all three missions must be completed and reviewed. The daily quests currently build Discipline, Physical and Mental. The other pillars are shown as foundations until their dedicated quest paths are introduced.
+          </p>
+          <div className="pillar-god-tier-note">
+            <span>✦</span>
+            <div><b>GOD TIER ACHIEVEMENT</b><small>The final roof is the crown of a completed pillar. Its unlock requirement will be defined with the achievement system.</small></div>
+          </div>
+          {status === "ERROR" && <small className="pillar-foundation-error">Some pillar records could not be loaded. Refresh this page to retry.</small>}
         </div>
-        <div className="pillar-foundation-total">
-          <strong>{status === "LOADING" ? "—" : activeCement}</strong>
-          <span>CEMENT EARNED</span>
+        <div className="pillar-detail-structure">
+          <PillarStructure cement={activeCement} large name={activePillar.name} />
+          <span className="pillar-structure-caption">THE GREAT FOUNDATION • {activePillar.name.toUpperCase()}</span>
         </div>
-        <p className="pillar-foundation-rule">
-          Cement is recorded only when the System approves the parent quest after all three missions are completed and reviewed.
-          The daily main quests currently develop Discipline, Physical and Mental. The other pillars remain part of your identity system and can receive dedicated quest paths as those are introduced.
-        </p>
-        {status === "ERROR" && <small className="pillar-foundation-error">Some pillar records could not be loaded. Refresh this page to retry.</small>}
       </article>
     </section>
   );
