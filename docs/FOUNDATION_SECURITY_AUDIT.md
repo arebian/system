@@ -21,7 +21,7 @@ The event tables remain readable and deletable by their owner. Canonical history
 - Every RLS policy found on a `public` table containing `user_id` uses `auth.uid()` in its ownership condition.
 - The `system_private` schema is not usable by `anon` or `authenticated`.
 - No public-schema SECURITY DEFINER function is executable by `anon`.
-- Of 88 public SECURITY DEFINER functions, 81 are callable by `authenticated`. All 81 were reviewed: 80 explicitly bind to `auth.uid()`; `system_assign_boss()` delegates to `system_weekly_boss_status_v1()`, which enforces the authenticated user context.
+- Of 89 public SECURITY DEFINER functions, 82 are callable by `authenticated`. All 82 were reviewed: 81 explicitly bind to `auth.uid()`; `system_assign_boss()` delegates to `system_weekly_boss_status_v1()`, which enforces the authenticated user context. The newly added `system_delete_player_data()` RPC is also bound to the caller through `auth.uid()` and is not executable by `anon`.
 - All public SECURITY DEFINER functions have a configured search path.
 - Internal progression helpers `system_award_xp()` and `system_add_attribute()` are not executable by client roles.
 - The pillar cement trigger function is not executable by client roles.
