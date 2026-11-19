@@ -26,8 +26,9 @@ The following migrations have been applied to the connected Supabase project and
 - `20261119163623_revoke_public_table_maintain.sql` — removed PostgreSQL `MAINTAIN` from current public tables and future postgres-owned public tables.
 - `20261119163930_default_deny_future_public_objects.sql` — changed postgres-owned future public tables and sequences to default-deny for API roles; new migrations must explicitly grant the minimum required access.
 - `20261119164007_revoke_default_public_function_execute.sql` — removed PostgreSQL's global default PUBLIC EXECUTE grant for future postgres-owned functions.
+- `20261119164749_lock_core_player_state_dml.sql` — revoked direct client writes to canonical profiles, attributes, quests, objectives, reviews, rewards and progression tables; profile deletion is now only through the reset RPC.
 
-The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions.
+The progression, journey and boss-damage ledgers remain readable only under their owner-scoped SELECT policies. Client roles cannot insert, update, delete or truncate them; canonical writes and account-reset deletion run through trusted backend functions. Canonical profiles, attributes, quests, objectives, reviews, rewards, inventory, skills, titles and pillar progress are also read-only to player clients.
 
 ## Authorization findings
 
